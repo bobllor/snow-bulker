@@ -1,0 +1,17 @@
+normal:
+  profile: Dell i7 Big
+  account_manager_email: manager.email2@gmail.com
+  data_file: excel.xlsx
+  desired_software: Adobe AfterEffects
+  software:
+    - adobe dreamweaver
+    - adobe creative cloud
+    - microsoft office web apps
+  hardware:
+    - monitor 22
+    - wireless combo 
+return:
+  profile: Return
+  account_manager_email: manager.email1@gmail.com
+  data_file: return-excel-test.xlsx
+  email_cache: some-company.txt

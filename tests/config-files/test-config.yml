@@ -1,0 +1,25 @@
+auth_info:
+  main_url: main-url.com
+  main_html_attribute: an-id-attribute
+  main_html_selector: id
+  url_substring: service-now
+  login_info:
+    multi_page: true
+    login_locators:
+      - name
+      - name
+      - css selector
+    login_elements:
+      user_element: username
+      password_element: password
+      button_element: "#button"
+settings:
+  headless: false
+  enable_log_screenshot: false
+  log_level: "info"
+profile_url:
+  returns: returns-url.com
+  custom: custom-url.com
+  dell_i5: delli5-url.com
+  dell_i7: delli7-url.com
+  dell_i7_big: delli7big-url.com
