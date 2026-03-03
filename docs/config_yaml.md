@@ -10,6 +10,9 @@ This file is **required**. The file will be read twice, once when the program is
 and another time continuously when the automation process starts. 
 - The latter hot loads the config file.
 
+*Every non-HTML attribute* are expected to be in lowercase, while HTML attributes *are case sensitive*
+and the value defined in the file must be the same as it is found on the page.
+
 ```yaml
 # sample file
 auth_info:
@@ -27,6 +30,9 @@ auth_info:
       user_element: login-name
       password_element: passwd-name
       button_element: "#signin-selector" # must be in quotations due to this being an ID selector
+settings:
+  headless: false
+  log_level: "info"
 profile_url: 
   returns: "profile-url.com" 
   custom: "profile-url.com" 
