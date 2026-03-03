@@ -9,7 +9,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from typing import Any, Literal
-from .support.types import Locator
+from .support.types import Locator, Options
 import selenium.webdriver.chrome.webdriver as chrome
 import selenium.webdriver.firefox.webdriver as firefox
 import time
@@ -18,30 +18,46 @@ type Drivers = Literal["chrome", "firefox"]
 
 class Driver:
     '''Base class for WebDriver related navigation and methods.'''
-    def __init__(self, driver: Drivers | WebDriver = "chrome", *, options: ChromeOptions | FirefoxOptions = None, wait_timer: int = 10):
+    def __init__(self, 
+    driver: Drivers = "chrome", 
+    *, 
+    options: Options = None,
+    wait_timer: int = 10,):
         '''
         Parameters
         ----------
-            driver: Drivers | WebDriver
-                A string representing the driver or the WebDriver object. By default it
-                uses ChromeDriver.
+            driver: Drivers
+                A string representing the driver to choose. By default it
+                uses ChromeDriver with `chrome`.
             
-            options: ChromeOptions | FirefoxOptions
-                The Option object for the WebDDriver. By default it uses the ChromeDriver and disables logging.
+            options: Options
+                An object that contains keys for the options to enable for the driver. By default
+                it is None.
 
             wait_timer: int
                 The default time to wait for finding elements in seconds. If the timer
                 reaches the given number then a TimeoutException is raised. By default it is 10 seconds.
         '''
-        if options is None:
-            options: ChromeOptions = ChromeOptions()
-            options.add_argument('--log-level=3')
-            options.add_experimental_option('excludeSwitches', ['enable-logging'])
-            options.add_argument('--disable-logging')
-        
         if driver == 'chrome':
-            driver = chrome.WebDriver(options=options)
+            chrome_options: ChromeOptions = ChromeOptions()
+            if options is not None:
+                if options.get("headless", False):
+                    chrome_options.add_argument("--headless=new")
+
+                if options.get("silent", False):
+                    chrome_options.add_argument('--log-level=3')
+                    chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+                    chrome_options.add_argument('--disable-logging')
+
+            driver = chrome.WebDriver(options=chrome_options)
         elif driver == 'firefox':
+            ff_options: FirefoxOptions = FirefoxOptions()
+            if options is not None:
+                if options.get("headless", False):
+                    ff_options.add_argument("headless")
+
+                if options.get("silent", False):
+                    ff_options.log.level = "fatal"
             driver = firefox.WebDriver(options=options)
         
         self.driver: WebDriver = driver
