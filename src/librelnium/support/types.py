@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, TypedDict
 
 Locator = Literal[
     "id", 
@@ -10,3 +10,7 @@ Locator = Literal[
     "class name", 
     "css selector"
 ]
+
+class Options(TypedDict):
+    headless: bool
+    silent: bool
