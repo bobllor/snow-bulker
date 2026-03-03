@@ -5,7 +5,7 @@ from typing import Any
 import tests.vars as vars
 
 def test_read(data_yaml: DataYamlLoader):
-    yaml: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG)
+    yaml: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG, lower=True)
     res: Result = data_yaml.validate(yaml)
 
     assert not res.err
@@ -16,7 +16,7 @@ def test_read(data_yaml: DataYamlLoader):
         assert key in yaml and len(dict(cfg)) > len(yaml[key])
 
 def test_software_read(data_yaml: DataYamlLoader):
-    yaml: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG)
+    yaml: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG, lower=True)
     res: Result[RootData] = data_yaml.validate(yaml)
 
     assert not res.err
@@ -29,7 +29,7 @@ def test_check_default_read(data_yaml: DataYamlLoader):
     # any key from data.yml
     key: str = "normal"
 
-    yaml: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG)
+    yaml: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG, lower=True)
     res: Result[RootData] = data_yaml.validate(yaml)
     data: DataYaml = res.content.root[key]
 

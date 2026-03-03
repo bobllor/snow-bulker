@@ -43,7 +43,7 @@ def write_email_cache(path: Path, amount: int = 5) -> list[str]:
     return emails
 
 def get_yaml_res(yaml_loader: Type[YamlLoader], file: Path | str) -> Result:
-    yaml_raw: dict[str, Any] = yaml_loader.read(file)
+    yaml_raw: dict[str, Any] = yaml_loader.read(file, lower=True)
     res: Result = yaml_loader.validate(yaml_raw)
 
     return res
@@ -85,7 +85,7 @@ def test_check_project_files(bulker: Bulker):
 @patch("src.core.driver_utils.DriverUtils.handle_dropdown")
 @patch("src.core.bulker.os.replace")
 def test_start(m1: MagicMock, m2: MagicMock, data_yaml: DataYamlLoader, html_yaml: HTMLYamlLoader, bulker: Bulker):
-    config: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG)
+    config: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG, lower=True)
 
     # tested in a separate test
     del config["return"]
@@ -115,7 +115,7 @@ def test_start(m1: MagicMock, m2: MagicMock, data_yaml: DataYamlLoader, html_yam
     mock_profile_urls: MagicMock = MagicMock()
     bulk_data: Result[list[BulkData]] = bulker.get_bulk_data(root)
 
-    raw: dict[str, Any] = html_yaml.read(vars.HTML_CONFIG)
+    raw: dict[str, Any] = html_yaml.read(vars.HTML_CONFIG, lower=True)
     html_res: Result[HTMLFields] = html_yaml.validate(raw)
 
     assert not html_res.err
@@ -131,7 +131,7 @@ def test_start(m1: MagicMock, m2: MagicMock, data_yaml: DataYamlLoader, html_yam
 @patch("src.core.driver_utils.DriverUtils.handle_dropdown")
 @patch("src.core.bulker.os.replace")
 def test_return_start(m1: MagicMock, m2: MagicMock, data_yaml: DataYamlLoader, html_yaml: HTMLYamlLoader, bulker: Bulker):
-    config: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG)
+    config: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG, lower=True)
 
     # tested in a separate test
     del config["normal"]
@@ -159,7 +159,7 @@ def test_return_start(m1: MagicMock, m2: MagicMock, data_yaml: DataYamlLoader, h
     mock_profile_urls: MagicMock = MagicMock()
     bulk_data: Result[list[BulkData]] = bulker.get_bulk_data(root)
 
-    raw: dict[str, Any] = html_yaml.read(vars.HTML_CONFIG)
+    raw: dict[str, Any] = html_yaml.read(vars.HTML_CONFIG, lower=True)
     html_res: Result[HTMLFields] = html_yaml.validate(raw)
 
     assert not html_res.err
@@ -173,7 +173,7 @@ def test_return_start(m1: MagicMock, m2: MagicMock, data_yaml: DataYamlLoader, h
     assert cache_path.exists() and len(bulker.failed_users) == 0
 
 def test_fail_get_bulk_data(bulker: Bulker, tmp_path: Path, data_yaml: DataYamlLoader):
-    raw: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG) 
+    raw: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG, lower=True) 
 
     raw["normal"]["data_file"] = "non-existent.xlsx"
     raw["return"]["data_file"] = "non-existent1.xlsx"
@@ -189,7 +189,7 @@ def test_fail_get_bulk_data(bulker: Bulker, tmp_path: Path, data_yaml: DataYamlL
     assert len(bulk.content) == 0
 
 def test_ignore_get_bulk_data(bulker: Bulker, tmp_path: Path, data_yaml: DataYamlLoader):
-    raw: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG) 
+    raw: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG, lower=True)
 
     raw["normal"]["ignore"] = True
 
@@ -364,7 +364,7 @@ def test_get_processes(bulker: Bulker, data_yaml: DataYamlLoader, parser: Parser
         assert isinstance(obj["args"], tuple) and isinstance(obj["process_type"], str) and len(obj) == 3
 
 def test_get_bulk_data(bulker: Bulker, data_yaml: DataYamlLoader):
-    raw_yaml: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG)
+    raw_yaml: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG, lower=True)
     res: Result[RootData] = data_yaml.validate(raw_yaml)
 
     assert not res.err
@@ -381,7 +381,7 @@ def test_get_bulk_data(bulker: Bulker, data_yaml: DataYamlLoader):
 
 @patch("src.core.process.DriverUtils.handle_dropdown")
 def test_fail_users_start(_, data_yaml: DataYamlLoader, bulker: Bulker):
-    raw: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG)
+    raw: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG, lower=True)
     res: Result[RootData] = data_yaml.validate(raw)
 
     assert not res.err
