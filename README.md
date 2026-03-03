@@ -169,9 +169,6 @@ Settings related to the logging can be found in the `config` YAML file under the
 By default the program logs to the console at the *info* level or above. This level can be modified with the
 key `log_level`.
 
-In case of Selenium based errors, screenshots for an error can be enabled. This is the key `enable_log_screenshot` 
-in the `config` YAML file.
-
 ## Development
 
 The program *uses Selenium* as its core, knowing how to interact with HTML elements and Selenium knowledge is required.

@@ -26,7 +26,14 @@ class ProgramStarter:
 
         self._driver: Driver = None
 
-    def start(self, bulker: Bulker, config: Config, root_data: RootData, html_fields: HTMLFields, *, wait_time: int | float = 5):
+    def start(self, 
+    bulker: Bulker, 
+    config: Config, 
+    root_data: RootData, 
+    html_fields: HTMLFields, 
+    *, 
+    wait_time: int | float = 5,
+    headless: bool = False):
         '''Starting point for the program.
 
         Parameters
@@ -45,6 +52,9 @@ class ProgramStarter:
 
             wait_time: int | float
                 The wait time after the cart is added to refresh. By default it is 5 seconds.
+            
+            headless: bool
+                Run the driver in headless. By default it is False.
         '''
         bulk_res: Result[BulkData] = bulker.get_bulk_data(root_data)
         self.logger.info(bulk_res.msg)
@@ -57,7 +67,8 @@ class ProgramStarter:
 
             return
 
-        driver: Driver = Driver("chrome", wait_timer=5)
+        # silent will be true, this cannot be changed.
+        driver: Driver = Driver("chrome", wait_timer=5, options={"headless": headless, "silent": True})
         # used for turning off the driver in case of errors
         self._driver = driver
         login: Login = Login(driver.driver)
@@ -142,7 +153,10 @@ class ProgramStarter:
                         password=password,
                     )
 
-                    stay_signed_in_button: WebElement = login.find_element("id", "idSIButton9")
+                    stay_signed_in_button: WebElement = login.find_element(
+                        auth_info.login_info.stay_signed_in_locator,
+                        auth_info.login_info.stay_signed_in_element,
+                    )
                     stay_signed_in_button.click()
 
                     login.set_wait_timer(3)
@@ -191,8 +205,10 @@ class ProgramStarter:
                 result.err = True
                 result.msg = "Errors occurred during YAML parsing"
                 continue
-            
-            raw_yaml: dict[str, Any] = obj["yaml_loader"].read(file_path)
+                
+            # config and HTML files are case sensitive, they must be lowered
+            lower: bool = obj["parsed_key"] == "excel_root"
+            raw_yaml: dict[str, Any] = obj["yaml_loader"].read(file_path, lower=lower)
             res: Result = obj["yaml_loader"].validate(raw_yaml)
             if res.err:
                 return res

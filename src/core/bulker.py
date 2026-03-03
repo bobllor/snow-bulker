@@ -95,8 +95,7 @@ class Bulker:
         refresh: bool
             Boolean used to refresh the page *after* it gets added to cart. By default this is True.
         '''
-        if driver is None:
-            driver: Driver = driver or Driver("chrome")
+        driver = driver or Driver("chrome")
 
         processor: ProcessFields = ProcessFields(driver, html_fields, logger=self.logger)
 

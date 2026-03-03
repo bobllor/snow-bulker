@@ -6,7 +6,7 @@ from typing import Any, get_args
 import tests.vars as vars
 
 def test_read(config_yaml: ConfigYamlLoader):
-    yaml: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG)
+    yaml: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG, lower=True)
     
     res: Result[Config] = config_yaml.validate(yaml)
 
@@ -22,7 +22,7 @@ def test_default():
     assert config.auth_info.main_url == ""
     
 def test_validate_default(config_yaml: ConfigYamlLoader):
-    yaml: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG)
+    yaml: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG, lower=True)
     # this key has a default value defined with Config
     del yaml["auth_info"]["login_info"]["multi_page"]
 
@@ -42,7 +42,7 @@ def test_check_empty(config_yaml: ConfigYamlLoader):
     assert len(errors) > 0 and len(errors) < 20
 
 def test_wrong_value_type(config_yaml: ConfigYamlLoader):
-    raw: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG)
+    raw: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG, lower=True)
 
     raw["profile_url"]["returns"] = 123
     raw["auth_info"]["main_url"] = True
@@ -52,7 +52,7 @@ def test_wrong_value_type(config_yaml: ConfigYamlLoader):
     assert not res.err and res.content.profile_url.returns == "" and res.content.auth_info.main_url == ""
 
 def test_list_wrong_type(config_yaml: ConfigYamlLoader):
-    raw: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG)
+    raw: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG, lower=True)
 
     raw["auth_info"]["login_info"]["login_locators"] = True
     # checking if other values are not also changed
@@ -66,7 +66,7 @@ def test_list_wrong_type(config_yaml: ConfigYamlLoader):
     assert len(arr) == 0 and res.content.auth_info.main_url == base_url
 
 def test_wrong_id_literal(config_yaml: ConfigYamlLoader):
-    raw: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG)
+    raw: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG, lower=True)
 
     raw["auth_info"]["main_html_selector"] = True
 
@@ -76,7 +76,7 @@ def test_wrong_id_literal(config_yaml: ConfigYamlLoader):
     assert res.content.auth_info.main_html_selector in get_args(Locator)
 
 def test_wrong_log_literal(config_yaml: ConfigYamlLoader):
-    raw: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG)
+    raw: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG, lower=True)
 
     raw["settings"]["log_level"] = True
 

@@ -21,6 +21,8 @@ class LoginElements(BaseModel):
 class LoginInfo(BaseModel):
     login_locators: Annotated[list, BeforeValidator(utils.return_list)] = []
     login_elements: LoginElements = LoginElements()
+    stay_signed_in_locator: Annotated[Locator, BeforeValidator(lambda v: utils.return_string(v, ""))] = "id"
+    stay_signed_in_element: Annotated[str, BeforeValidator(lambda v: utils.return_string(v, ""))] = ""
     multi_page: Annotated[bool, BeforeValidator(lambda v: utils.return_bool(v, True))] = True
 
 class AuthInfo(BaseModel):
@@ -34,7 +36,6 @@ class AuthInfo(BaseModel):
 class ProgramSettings(BaseModel):
     '''Used to hold the configuration of the program.'''
     headless: Annotated[bool, BeforeValidator(lambda v: utils.return_bool(v, False))] = False
-    enable_log_screenshot: Annotated[bool, BeforeValidator(lambda v: utils.return_bool(v, False))] = False
     log_level: Annotated[LogLevel, BeforeValidator(lambda v: utils.return_literal(v, LogLevel, "info"))] = "info"
 
 class Config(BaseModel):

@@ -6,9 +6,14 @@ from src.core.yaml.yaml_loader import YamlStarter, ParsedYaml
 from src.core.bulker import Bulker
 from src.support.types import Result
 from src.core.runner import Runner
-from logger import Log
+from logger import Log, LogLevel
 from src.core.program_start import ProgramStarter
+from typing import TypedDict
 import src.support.utils as utils
+
+class SettingsObj(TypedDict):
+    log_level: LogLevel
+    headless: bool
 
 if __name__ == "__main__":
     project_root: Path = Path(__file__).parent
@@ -28,6 +33,8 @@ if __name__ == "__main__":
     # reinit from the config
     config_loader = ConfigYamlLoader(logger=logger)
 
+    # config and HTML files are case sensitive, they must be lowered
+    # this is handeled inside ProgramStarter.parse_yaml
     yaml_objs: list[YamlStarter] = [
         {"yaml_loader": data_loader, "data_file": DATA_FILE, "parsed_key": "excel_root"},
         {"yaml_loader": html_loader, "data_file": HTML_FILE, "parsed_key": "html_fields"},
@@ -67,11 +74,10 @@ if __name__ == "__main__":
 
                     continue
 
-                bulker: Bulker = Bulker(project_root, logger=logger)
-
                 yaml_content: ParsedYaml = res.content
+                hot_config: Config = res.content["config"]
 
-                invalid_keys: list[str] = config_loader.check_empty(dict(yaml_content["config"]))
+                invalid_keys: list[str] = config_loader.check_empty(dict(hot_config))
                 if len(invalid_keys) > 0:
                     logger.error(
                         f"The following keys have invalid values or are missing, correction required: \n- {"\n- ".join(invalid_keys)}"
@@ -80,13 +86,18 @@ if __name__ == "__main__":
                     runner.enter_to_continue()
 
                     continue
+                
+                if hot_config.settings.log_level != config.settings.log_level:
+                    logger = Log(log_level=hot_config.settings.log_level)
 
+                bulker: Bulker = Bulker(project_root, logger=logger)
                 starter.start(
                     bulker, 
                     yaml_content["config"], 
                     yaml_content["excel_root"],
                     yaml_content["html_fields"], 
                     wait_time=5.5,
+                    headless=config.settings.headless,
                 )
 
                 runner.enter_to_continue()

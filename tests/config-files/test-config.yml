@@ -5,6 +5,8 @@ auth_info:
   url_substring: service-now
   login_info:
     multi_page: true
+    stay_signed_in_locator: id
+    stay_signed_in_element: an-id-here
     login_locators:
       - name
       - name
@@ -15,7 +17,6 @@ auth_info:
       button_element: "#button"
 settings:
   headless: false
-  enable_log_screenshot: false
   log_level: "info"
 profile_url:
   returns: returns-url.com
