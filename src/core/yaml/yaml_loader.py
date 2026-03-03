@@ -26,16 +26,24 @@ class YamlLoader:
         self.logger: Log = logger or Log()
         self.base_class: Type[BaseModel | RootModel] = base_class
 
-    def read(self, file: str | Path) -> dict[str, Any]:
+    def read(self, file: str | Path, *, lower: bool = False) -> dict[str, Any]:
         '''Reads a YAML file and returns the contents of the dictionary.
-        The keys and values of the dictionary will be set to a lowercase state if applicable.
         
         This returns the exact contents from the file.
+
+        Parameters
+        ----------
+            file: str | Path
+                The string or Path of the target file to read.
+
+            lower: bool
+                If `True`, then lowercase all keys and values. By default it is
+                `False`.
         '''
         with open(file, "r") as file:
             yaml_data: dict[str, Any] = yaml.safe_load(file)
 
-        return self.to_lower(yaml_data)
+        return self.to_lower(yaml_data) if lower else yaml_data
 
     def validate(self, data: dict[str, Any]) -> Result:
         '''Validates the data dictionary. It will return a Result object with the
