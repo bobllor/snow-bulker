@@ -102,7 +102,7 @@ class Login(Driver):
         locators = temp
 
         user_element: WebElement = self.find_element(locators[0], elements["user_element"])
-        user_element.send_keys(username)
+        self.send_keys(username, element=user_element, pause=.7)
 
         if multi_page:
             self.send_keys(Keys.ENTER, pause=1)
@@ -110,7 +110,7 @@ class Login(Driver):
         pw_element: WebElement | None = self.find_element(locators[1], elements["password_element"], return_none=True)
 
         if pw_element is not None:
-            pw_element.send_keys(password)
+            self.send_keys(password, element=pw_element, pause=.7)
         
         # locators[2] only matters if button is not None
         found_button: bool = False
