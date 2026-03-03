@@ -32,7 +32,7 @@ class Log(Logger):
     def __init__(self, 
     name: str = __name__,
     *, 
-    log_dir: Path | str = None,
+    log_path: Path | str = None,
     log_level: LogLevel = "debug",
     handler_levels: HandlerLevelOptions = {},
     stream: TextIO = sys.stdout,
@@ -83,19 +83,21 @@ class Log(Logger):
             "critical": CRITICAL,
         }
 
-        # creates the log directory and path
-        if log_dir is not None:
-            new_log_dir: Path = Path("")
-            if isinstance(log_dir, str):
-                new_log_dir = Path(log_dir)
-            elif isinstance(log_dir, Path):
-                new_log_dir = log_dir
+        # creates the log path
+        self._log_file: Path = None
+        if log_path is not None:
+            new_log_path: Path = Path("")
+            if isinstance(log_path, str):
+                new_log_path = Path(log_path)
+            elif isinstance(log_path, Path):
+                new_log_path = log_path
             
-            if not new_log_dir.exists():
-                new_log_dir.mkdir(parents=True, exist_ok=True)
+            if not new_log_path.exists():
+                new_log_path.mkdir(parents=True, exist_ok=True)
 
-            log_file: Path = new_log_dir / DEFAULT_FILENAME
-            file_handler = FileHandler(log_file)
+            self._log_file = new_log_path / DEFAULT_FILENAME
+
+            file_handler = FileHandler(self._log_file)
 
         hdlrs: list[Handler] = [stream_handler]
         hdlr_levels: list[int] = [
@@ -132,3 +134,8 @@ class Log(Logger):
             handler.setLevel(level)
 
             self.addHandler(handler)
+        
+    @property
+    def log_file(self) -> Path | None:
+        '''The log file path. If a log path was not given, then return None.'''
+        return self._log_file
