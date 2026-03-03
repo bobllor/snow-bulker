@@ -95,4 +95,4 @@ return_fields:
 checkout_fields:
   cart_dropdown: "#sample-attribute-here"
   add_to_cart_button: "#sample-attribute-here"
-  add_cart_selector: "#sample-attribute-here"
+  add_cart_selector: "id"
