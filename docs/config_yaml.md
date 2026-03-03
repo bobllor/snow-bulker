@@ -22,6 +22,8 @@ auth_info:
   url_substring: service-now # used to check the url if authentication was successful
   login_info:
     multi_page: true
+    stay_signed_in_locator: css selector
+    stay_signed_in_element: ".classes.are.here"
     login_locators:
       - name
       - name
@@ -216,6 +218,30 @@ It contains three fields:
 3. `button_element`: Represents the *sign in* button.
 
 By default, all of these values is an empty string. These are *required*.
+
+#### `login_info`: `stay_signed_in_locator`
+
+Default: `id`
+
+The locator of the "Stay signed in" button element.
+
+This field has *fixed values*:
+- `id`
+- `xpath`
+- `link text`
+- `partial link text`
+- `name`
+- `tag name`
+- `class name`
+- `css selector`
+
+#### `login_info`: `stay_signed_in_element`
+
+Default: `""`
+
+The HTML attribute of the "Stay signed in" button element.
+
+Due to the authentication being a Microsoft login, this is expected to appear.
 
 ### `profile_url`
 
