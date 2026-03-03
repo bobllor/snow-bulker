@@ -74,12 +74,6 @@ Makes the WebDriver headless, in other words the browser is ran in the backgroun
 > The program will likely fail to close the browser and be left open, consuming resources despite being unused. 
 > It is *recommended to leave this as `false`* since it can manually be closed in case of failure.
 
-#### `enable_log_screenshot`
-
-Default: `false`
-
-If true, then when the WebDriver encounters an error, it will take a screenshot and save it to the logs folder.
-
 #### `log_level`
 
 Default: `info`
