@@ -163,7 +163,10 @@ class ProcessFields:
 
             name_split: list[str] = user_data["full name"].split()
             first_name: str = name_split[0]
-            last_name: str = " ".join(name_split[:len(name_split) - 1])
+
+            last_name: str = name_split[-1]
+            if len(name_split) > 2:
+                last_name = " ".join(name_split[1:])
 
             user_info: list[tuple[str, str]] = [
                 (fields.first_name, first_name),
@@ -366,7 +369,7 @@ class ProcessFields:
         res.content = self.get_res_content("operating company", fields.operating_company)
         self.utils.handle_dropdown(value=fields.operating_company, key=company_data["operating company"], send_enter=True, wait_time=.8)
 
-        pid: str = stils.format_pid(company_data["project id"])
+        pid: str = company_data["project id"]
         res.content = self.get_res_content("project id", fields.project_id)
         self.utils.handle_dropdown(value=fields.project_id, key=pid, send_enter=True, wait_time=.8)
 
@@ -386,7 +389,7 @@ class ProcessFields:
         self.utils.handle_dropdown(value=fields.account_manager, key=account_manager_email, send_tab=True, wait_time=.8)
 
         runners: list[tuple[Callable[[Any], Result], tuple[Any]]] = [
-            (self.company_fill_company, (company_data, fields,),),
+            (self.company_fill_dates, (company_data, fields,),),
             (self.company_fill_company, (company_data, fields,),),
         ]
         for tup in runners:
