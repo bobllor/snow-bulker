@@ -28,7 +28,7 @@ class Parser:
     def __init__(self, *, logger: Log = None):
         self.logger: Log = logger or Log()
     
-    def read(self, file: Path | str | pd.DataFrame, 
+    def read(self, file: Path | str, 
     *, 
     date_columns: list[str] = ["desired by", "start date", "end date"], 
     date_col_add_year: str = "end date",
@@ -44,8 +44,8 @@ class Parser:
 
         Parameters
         ----------
-            file: PathStr | pd.DataFrame
-                The Excel file, this can be a PathStr or the DataFrame.
+            file: PathStr
+                The Excel file, a Path or string.
 
             date_columns: list[str]
                 The column names that represent the dates of the Excel. This is used to convert
