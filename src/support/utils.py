@@ -27,10 +27,10 @@ def get_config(root: Path, file: Path | str, yaml_extensions: list[str], config_
     return config
 
 def format_pid(pid: str) -> str:
-    '''Formats the PID for missing leading zeroes. If the PID is not a number,
-    then it will do nothing to the string.
+    '''Formats the PID for missing leading zeroes. If the PID contains alphabets,
+    then it will do nothing and return the PID unaffected.
     '''
-    if pid.isalpha():
+    if not pid.isnumeric():
         return pid
 
     LEAD_ZEROES_COUNT: int = 4
