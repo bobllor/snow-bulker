@@ -291,3 +291,22 @@ def get_path_files(root: Path) -> list[Path]:
             data.append(file)
     
     return data
+
+def format_postal(postal: str) -> str:
+    '''Formats the postal code to the correct length. 
+    
+    This is only used due to Excel files trimming the leading zero by default.
+    Normal postal codes (len == 5) or Canadian postal codes will not be affected by this.
+    '''
+    # if >= 5, then it is either a normal 5 digit postal or its canada
+    if len(postal) >= 5:
+        return postal
+
+    new_postal: list[str] = []
+
+    for _ in range(5 - len(postal)):
+        new_postal.append("0")
+    
+    new_postal.extend(postal)
+
+    return "".join(new_postal)
