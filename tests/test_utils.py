@@ -76,6 +76,50 @@ def test_no_recurse_find_file(tmp_path: Path):
 
     assert file_path is None
 
+def test_format_numeric_pid():
+    vals: list[str] = [
+        "123456",
+        "012345",
+        "001234",
+        "0001234",
+    ]
+
+    for val in vals:
+        new_val: str = utils.format_pid(val)
+
+        assert new_val[:4] == "0000"
+
+def test_format_alpha_pid():
+    vals: list[str] = [
+        "project id one",
+        "project id 2",
+        "service id 3"
+    ]
+
+    for val in vals:
+        new_val: str = utils.format_pid(val)
+
+        assert val == new_val
+
+def test_format_normal_postal():
+    postals: list[str] = [
+        "1234",
+        "12435",
+        "33332",
+        "5632",
+        "323",
+        "A4C H5N",
+        "D4CD3C"
+    ]
+
+    for postal in postals:
+        new_postal: str = utils.format_postal(postal)
+
+        if "0" in new_postal:
+            assert len(new_postal) == 5
+
+        assert postal in new_postal
+
 def mk_files(tmp_path: Path) -> list[Path]:
     '''Creates folders in a given path. The list of Paths used to create the files
     is returned.

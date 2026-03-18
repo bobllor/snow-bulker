@@ -28,7 +28,7 @@ class Parser:
     def __init__(self, *, logger: Log = None):
         self.logger: Log = logger or Log()
     
-    def read(self, file: Path | str | pd.DataFrame, 
+    def read(self, file: Path | str, 
     *, 
     date_columns: list[str] = ["desired by", "start date", "end date"], 
     date_col_add_year: str = "end date",
@@ -44,8 +44,8 @@ class Parser:
 
         Parameters
         ----------
-            file: PathStr | pd.DataFrame
-                The Excel file, this can be a PathStr or the DataFrame.
+            file: PathStr
+                The Excel file, a Path or string.
 
             date_columns: list[str]
                 The column names that represent the dates of the Excel. This is used to convert
@@ -257,13 +257,9 @@ class Parser:
                     value = state
                 elif key == address_keys["postal"]:
                     # canada orders doesn't get effected by this, their postal is 6 or 7 characters long.
+                    # string conversion needed as Excel is often an int
                     value = str(value)
-                    zero_count: int = 5 - len(value)
-
-                    if zero_count > 0:
-                        zeroes: list[str] = ["0" for _ in range(zero_count)]
-
-                        value = "".join(zeroes) + value
+                    value = utils.format_postal(value)
                     
                 address_data[key] = value
             
