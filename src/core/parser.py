@@ -257,13 +257,9 @@ class Parser:
                     value = state
                 elif key == address_keys["postal"]:
                     # canada orders doesn't get effected by this, their postal is 6 or 7 characters long.
+                    # string conversion needed as Excel is often an int
                     value = str(value)
-                    zero_count: int = 5 - len(value)
-
-                    if zero_count > 0:
-                        zeroes: list[str] = ["0" for _ in range(zero_count)]
-
-                        value = "".join(zeroes) + value
+                    value = utils.format_postal(value)
                     
                 address_data[key] = value
             
