@@ -70,6 +70,21 @@ def test_get_address_data(parser: Parser):
 
     assert len(data) == len(df)
 
+def test_address_data_postal_correction(parser: Parser):
+    df: pd.DataFrame = parser.read(vars.EXCEL, date_columns=DATE_COLUMNS, date_col_add_year="end date", add_years=1)
+
+    base_postals: list[str] = df["postal"].to_list()
+    data: list[AddressData] = parser.get_address_data(df)
+
+    for i, ad in enumerate(data):
+        base_postal: str = base_postals[i]
+        parsed_postal: str = ad["postal"]
+
+        if "0" in parsed_postal:
+            assert len(parsed_postal) == 5
+        
+        assert base_postal in parsed_postal
+
 def test_get_company_data(parser: Parser):
     df: pd.DataFrame = parser.read(vars.EXCEL, date_columns=DATE_COLUMNS, date_col_add_year="End_Date", add_years=1)
 
