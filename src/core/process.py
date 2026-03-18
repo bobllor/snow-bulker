@@ -10,7 +10,6 @@ from src.support.types import Result
 from typing import Callable, Any
 from logger import Log
 from datetime import datetime
-import src.support.utils as stils
 
 class ProcessFields:
     '''Class to automate processing the fields of the ordering form. The core fields methods will require data
