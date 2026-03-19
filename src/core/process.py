@@ -10,6 +10,8 @@ from src.support.types import Result
 from typing import Callable, Any
 from logger import Log
 from datetime import datetime
+from pathlib import Path
+import src.support.utils as u
 
 class ProcessFields:
     '''Class to automate processing the fields of the ordering form. The core fields methods will require data
@@ -398,8 +400,7 @@ class ProcessFields:
             comp_res: Result = func(*args)
 
             if comp_res.err:
-                comp_res.err
-                return res
+                return comp_res
 
         # NOTE: the key will be new device as a new order will always be a new device.
         res.content = self.get_res_content("request type", fields.request_type)
@@ -410,6 +411,10 @@ class ProcessFields:
         self.utils.handle_dropdown(value=fields.admin, key="No", send_enter=True, send_down=True, wait_time=.8)
         res.content = self.get_res_content("universal serial bus storage", fields.usb)
         self.utils.handle_dropdown(value=fields.usb, key="No", send_enter=True, send_down=True, wait_time=.8)
+
+        waiver_res: Result = self.upload_waiver()
+        if waiver_res.err:
+            return waiver_res
 
         return res
 
@@ -736,6 +741,26 @@ class ProcessFields:
     
         self.driver.click(add_button, pause=pause)
         
+        return res
+    
+    def upload_waiver(self, res: Result = None) -> Result:
+        '''Uploads the waiver.
+        
+        IMPORTANT: This is a temporary function, this is a patch function due to the
+        developers of the ServiceNow instance accidentally enabling this feature for everyone,
+        rather than only due to specific conditions.
+        This will be fixed eventually and will not be used.
+        '''
+        if res is None:
+            res = Result()
+        res.msg = self.get_res_msg("Upload waiver")
+
+        waiver_main_element: WebElement = self.driver.find_element("css selector", "#attach_global_services_equipment_loan_and_waiver_form")
+
+        waiver_path: Path | None = u.get_file(Path("output"), "Waiver.docx", skip_dir=True)
+        waiver_input: WebElement = waiver_main_element.find_element("tag name", "input")
+        waiver_input.send_keys(str(waiver_path.absolute()))
+
         return res
     
     def get_res_msg(self, process: str) -> str:
