@@ -398,8 +398,7 @@ class ProcessFields:
             comp_res: Result = func(*args)
 
             if comp_res.err:
-                comp_res.err
-                return res
+                return comp_res.err
 
         # NOTE: the key will be new device as a new order will always be a new device.
         res.content = self.get_res_content("request type", fields.request_type)
