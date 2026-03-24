@@ -25,6 +25,9 @@ company_fields:
   desired_date: "#sample-attribute-here"
   start_date: "#sample-attribute-here"
   end_date: "#sample-attribute-here"
+  account_type: "#sample-attribute-here"
+  regional_sub_account: "#sample-attribute-here"
+  national_sub_account: "#sample-attribute-here"
 address_fields:
   street: "#sample-attribute-here" 
   city: "#sample-attribute-here"
