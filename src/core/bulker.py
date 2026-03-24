@@ -6,7 +6,7 @@ from src.support.types import AddressData, CompanyData, UserData, ExcelData, Res
 from src.core.yaml.data_yaml.types import CustomOrder
 from src.core.parser import Parser, ReturnColumns
 from src.core.process import ProcessFields
-from src.core.yaml.data_yaml.types import RootData, DataYaml
+from src.core.yaml.data_yaml.types import RootData, DataYaml, AccountType
 from src.core.yaml.html_yaml.types import HTMLFields
 from src.core.yaml.config_yaml.types import ProfileUrl
 from typing import Any, Callable, TypedDict
@@ -217,6 +217,7 @@ class Bulker:
                 curr_company,
                 curr_address,
                 yaml_data.account_manager_email,
+                yaml_data.account_type,
                 yaml_data.custom_order,
                 yaml_data.profile == "custom",
             )
@@ -391,6 +392,7 @@ class Bulker:
         company_data: CompanyData, 
         address_data: AddressData, 
         manager_email: str,
+        account_type: AccountType,
         custom_data: CustomOrder,
         include_custom: bool = False,
         ) -> list[ProcessObject]:
@@ -413,6 +415,9 @@ class Bulker:
             
             manager_email: str
                 The email of the account manager.
+            
+            account_type: AccountType
+                The account type of the project.
             
             custom_data: CustomOrder
                 The custom data from the data YAML file.
@@ -439,7 +444,12 @@ class Bulker:
         })
         processes.append({
             "func": processor.start_company_fields,
-            "args": (company_data, manager_email, "global service" in company_data["operating company"].lower(),),
+            "args": (
+                company_data, 
+                manager_email,
+                account_type,
+                "global service" in company_data["operating company"].lower(), 
+            ),
             "process_type": "Company Info"
         })
         processes.append({
