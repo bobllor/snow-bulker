@@ -40,6 +40,9 @@ class CompanyFields(BaseModel):
         - `request_type`
         - `admin`
         - `usb`
+        - `account_type`
+        - `regional_sub_account`
+        - `national_sub_account`
     '''
     operating_company: str
     project_id: str
