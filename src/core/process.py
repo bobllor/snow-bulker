@@ -3,7 +3,7 @@ from selenium.webdriver.common.keys import Keys
 from src.librelnium.driver import Driver
 from src.core.driver_utils import DriverUtils, driver_wrapper
 from src.support.types import CompanyData, UserData, AddressData, ReturnColumns
-from src.core.yaml.data_yaml.types import CustomOrder, SoftwareOptions, HardwareOptions, OperatingSystems
+from src.core.yaml.data_yaml.types import CustomOrder, SoftwareOptions, HardwareOptions, OperatingSystems, AccountType
 from src.core.yaml.html_yaml.types import HTMLFields, AddressFields, ClientFields, AddonFields, CompanyFields
 from src.core.yaml.html_yaml.types import ReturnFields, CustomHardwareFields
 from src.support.types import Result
@@ -337,6 +337,7 @@ class ProcessFields:
     def start_company_fields(self, 
         company_data: CompanyData, 
         account_manager_email: str, 
+        project_account_type: AccountType = "regional",
         require_region: bool = False, 
         res: Result = None) -> Result:
         '''Starts the company field operations.
@@ -348,13 +349,17 @@ class ProcessFields:
             company_data: CompanyData
                 A dictionary consisting of the CompanyData of the Excel file.
             
-            account_manager_email: str
+            account_manager_email: AccountType
                 The email of the account manager. This is the manager of the user, and can either be the
                 actual manager or a requestor/point of contact. Obtained from the YAML configuration.
+
+            project_account_type: AccountType
+                The account type of the project. This is only used if the operating company contains "staffing",
+                otherwise it will be unused. By default it is "regional".
             
-            require_region: bool, default False
+            require_region: bool
                 Flag used to handle the Sales Region drop down. This is required to be True if the *operating company*
-                is Global Services, any other value does not require this.
+                is Global Services, any other value does not require this. By default it is False.
 
             res: Result
                 The Result of the method call. This should be left empty for the decorator
@@ -402,6 +407,20 @@ class ProcessFields:
             if comp_res.err:
                 return comp_res
 
+        # NOTE: this is a new feature added by SNOW devs... staffing is required to have this.
+        # i am unsure if this is permanent or a mistake.
+        if "staffing" in company_data["operating company"].lower():
+            res.content = self.get_res_content("project account type", fields.account_type)
+            self.utils.handle_dropdown(value=fields.account_type, key=project_account_type, send_enter=True, wait_time=.8)
+            res.content = self.get_res_content("regional sub account", fields.regional_sub_account)
+            self.utils.handle_dropdown(
+                value=fields.regional_sub_account, 
+                key=company_data["region"], 
+                send_enter=True, 
+                send_down=True, 
+                wait_time=.8
+            )
+
         # NOTE: the key will be new device as a new order will always be a new device.
         res.content = self.get_res_content("request type", fields.request_type)
         self.utils.handle_dropdown(value=fields.request_type, key="New device", send_tab=True, wait_time=1)
@@ -412,6 +431,7 @@ class ProcessFields:
         res.content = self.get_res_content("universal serial bus storage", fields.usb)
         self.utils.handle_dropdown(value=fields.usb, key="No", send_enter=True, send_down=True, wait_time=.8)
 
+        # NOTE: temp patch for waiver due to an incorrect change by SNOW developers
         waiver_res: Result = self.upload_waiver()
         if waiver_res.err:
             return waiver_res
