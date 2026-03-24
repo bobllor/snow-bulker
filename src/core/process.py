@@ -723,10 +723,15 @@ class ProcessFields:
             key: str = keys[i]
 
             res.content = self.get_res_content(key, field)
-            element: WebElement = self.driver.find_element("css selector", field)
+            element: WebElement = self.driver.find_element("css selector", field) 
 
-            if element.get_attribute("value").strip() == "":
-                element.send_keys(company_str)
+            if element.get_attribute("value").strip() != "":
+                self.driver.click(element, pause=.2)
+                self.driver.action_driver\
+                    .key_down(Keys.CONTROL)\
+                        .key_down("A").pause(.1).send_keys(Keys.BACK_SPACE).pause(.1).key_up(Keys.CONTROL).perform()
+
+            element.send_keys(company_str)
             
         return res
 
