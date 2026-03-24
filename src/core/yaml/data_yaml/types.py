@@ -3,6 +3,7 @@ from typing import Literal, Any
 
 type Profile = Literal["dell i5", "dell i7", "dell i7 big", "custom", "return"]
 type OperatingSystems = Literal["windows 11", "windows 10", "no operating system"]
+type AccountType = Literal["regional", "national"]
 
 type HardwareOptions = Literal[
     "laptop bag", 
@@ -58,6 +59,7 @@ class DataYaml(BaseModel):
     profile: Profile
     data_file: str
     email_cache: str = "default_cache.txt"
+    account_type: AccountType = "regional"
     hardware: list[HardwareOptions] = [] # changes to HardwareOptions need to be also be changed in HTML types
     software: list[SoftwareOptions] = [] # changes to SoftwareOptions need to be also be changed in HTML types
     ignore: bool = False

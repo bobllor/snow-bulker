@@ -57,6 +57,9 @@ class CompanyFields(BaseModel):
     desired_date: str
     start_date: str
     end_date: str
+    account_type: str
+    regional_sub_account: str
+    national_sub_account: str
 
 class AddressFields(BaseModel):
     '''HTML fields for the address section.
