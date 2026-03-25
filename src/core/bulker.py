@@ -216,10 +216,7 @@ class Bulker:
                 curr_user,
                 curr_company,
                 curr_address,
-                yaml_data.account_manager_email,
-                yaml_data.account_type,
-                yaml_data.custom_order,
-                yaml_data.profile == "custom",
+                yaml_data,
             )
             processes.extend(self.get_other_processes(processor, yaml_data))
             
@@ -391,10 +388,7 @@ class Bulker:
         user_data: UserData, 
         company_data: CompanyData, 
         address_data: AddressData, 
-        manager_email: str,
-        account_type: AccountType,
-        custom_data: CustomOrder,
-        include_custom: bool = False,
+        data_yaml: DataYaml
         ) -> list[ProcessObject]:
         '''Returns a list of ProcessObjects for running the main process in automating
         the ordering form.
@@ -418,21 +412,14 @@ class Bulker:
             
             account_type: AccountType
                 The account type of the project.
-            
-            custom_data: CustomOrder
-                The custom data from the data YAML file.
-
-            include_custom: bool
-                If true, include the ProcessObject for the custom ordering fields. 
-                Otherwise do not include in the list.
         '''
         processes: list[ProcessObject] = []
 
-        if include_custom:
+        if data_yaml.profile == "custom":
             processes.append(
                 {
                     "func": processor.start_custom_fields,
-                    "args": (custom_data,),
+                    "args": (data_yaml.custom_order,),
                     "process_type": "Custom Info"
                 }
             )
@@ -446,9 +433,10 @@ class Bulker:
             "func": processor.start_company_fields,
             "args": (
                 company_data, 
-                manager_email,
-                account_type,
+                data_yaml.account_manager_email,
+                data_yaml.account_type,
                 "global service" in company_data["operating company"].lower(), 
+                data_yaml.waiver_file,
             ),
             "process_type": "Company Info"
         })
@@ -569,7 +557,7 @@ class Bulker:
         
         try:
             if not is_return_profile:
-                df: pd.DataFrame = self.parser.read(data_path)
+                df: pd.DataFrame = self.parser.read(data_path, add_years=1)
 
                 data: ExcelData = {
                     "address": self.parser.get_address_data(df),
