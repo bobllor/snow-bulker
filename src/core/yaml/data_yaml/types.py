@@ -64,6 +64,7 @@ class DataYaml(BaseModel):
     software: list[SoftwareOptions] = [] # changes to SoftwareOptions need to be also be changed in HTML types
     ignore: bool = False
     desired_software: str = ""
+    waiver_file: str = ""
     os_type: OperatingSystems = "windows 11"
     custom_order: CustomOrder = CustomOrder()
 
