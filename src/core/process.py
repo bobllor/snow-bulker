@@ -338,7 +338,8 @@ class ProcessFields:
         company_data: CompanyData, 
         account_manager_email: str, 
         project_account_type: AccountType = "regional",
-        require_region: bool = False, 
+        require_region: bool = False,
+        waiver_file: str = "",
         res: Result = None) -> Result:
         '''Starts the company field operations.
 
@@ -360,6 +361,10 @@ class ProcessFields:
             require_region: bool
                 Flag used to handle the Sales Region drop down. This is required to be True if the *operating company*
                 is Global Services, any other value does not require this. By default it is False.
+            
+            waiver_file: str
+                The waiver file name, this must include the extension. If a waiver file is included, then it will trigger
+                a new waiver workflow that adds the waiver to the input file. By default it is an empty string.
 
             res: Result
                 The Result of the method call. This should be left empty for the decorator
@@ -431,10 +436,10 @@ class ProcessFields:
         res.content = self.get_res_content("universal serial bus storage", fields.usb)
         self.utils.handle_dropdown(value=fields.usb, key="No", send_enter=True, send_down=True, wait_time=.8)
 
-        # NOTE: temp patch for waiver due to an incorrect change by SNOW developers
-        waiver_res: Result = self.upload_waiver()
-        if waiver_res.err:
-            return waiver_res
+        if waiver_file != "":
+            waiver_res: Result = self.upload_waiver(waiver_file)
+            if waiver_res.err:
+                return waiver_res
 
         return res
 
@@ -768,21 +773,23 @@ class ProcessFields:
         
         return res
     
-    def upload_waiver(self, res: Result = None) -> Result:
-        '''Uploads the waiver.
-        
-        IMPORTANT: This is a temporary function, this is a patch function due to the
-        developers of the ServiceNow instance accidentally enabling this feature for everyone,
-        rather than only due to specific conditions.
-        This will be fixed eventually and will not be used.
-        '''
+    @driver_wrapper
+    def upload_waiver(self, waiver_file: str, res: Result = None) -> Result:
+        '''Uploads the waiver.'''
         if res is None:
             res = Result()
         res.msg = self.get_res_msg("Upload waiver")
 
-        waiver_main_element: WebElement = self.driver.find_element("css selector", "#attach_global_services_equipment_loan_and_waiver_form")
+        res.content = self.get_res_content("waiver upload", self.html_fields.company_fields.waiver)
+        waiver_main_element: WebElement = self.driver.find_element("css selector", self.html_fields.company_fields.waiver)
 
-        waiver_path: Path | None = u.get_file(Path("output"), "Waiver.docx", skip_dir=True)
+        waiver_path: Path | None = u.get_file(Path("output"), waiver_file, skip_dir=True)
+        if waiver_path is None:
+            res.err = True
+            res.content = self.get_res_content("waiver file search", "N/A")
+            return res
+
+        res.content = self.get_res_content("waiver input element", "N/A")
         waiver_input: WebElement = waiver_main_element.find_element("tag name", "input")
         waiver_input.send_keys(str(waiver_path.absolute()))
 
