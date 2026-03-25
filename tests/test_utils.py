@@ -64,6 +64,14 @@ def test_ext_find_file(tmp_path: Path):
     found_file = utils.get_file(tmp_path, "config")
     assert found_file is None
 
+def test_case_find_file(tmp_path: Path):
+    file: Path = tmp_path / "textfile.txt"
+    file.touch()
+
+    found_file: Path = utils.get_file(tmp_path, "TeXTFiLE.txt")
+
+    assert found_file is not None
+
 def test_no_recurse_find_file(tmp_path: Path):
     file: str = "item.txt"
     path: Path = tmp_path / "folder1" / file

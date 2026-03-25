@@ -28,6 +28,7 @@ company_fields:
   account_type: "#sample-attribute-here"
   regional_sub_account: "#sample-attribute-here"
   national_sub_account: "#sample-attribute-here"
+  waiver: "#sample-attribute-here"
 address_fields:
   street: "#sample-attribute-here" 
   city: "#sample-attribute-here"
