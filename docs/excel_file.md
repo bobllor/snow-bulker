@@ -84,10 +84,16 @@ The division the client is part of. This is expected to be a number.
 These date values are not required to be obtained from the requestor. Often times it is 
 better to use *the current day* for `Desired By` and `Start Date`, and one year later
 for `End Date`.
-- `End Date` cannot exceed the day by one, this is due to the limitations placed by the 
-ServiceNow developers.
+- `End Date` must be exactly one year from `Start Date`
 
-For example, `11/25/2025 | 11/25/2025 | 11/25/2026`.
+> IMPORTANT
+>
+> `End Date` must be exactly one year from `Start Date`
+> This is due to a conditional placed by the ServiceNow developers which prevents the order
+> from being submitted, as it is considered an error.
+> 
+> For example: Start date `2025-11-25` with end dates `2026-11-26` (1 year 1 day) and `2027-11-26` (2 years) 
+> are not valid and will fail the form submission.
 
 #### `Project ID`
 

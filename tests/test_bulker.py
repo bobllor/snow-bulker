@@ -344,7 +344,8 @@ def test_get_processes(bulker: Bulker, data_yaml: DataYamlLoader, parser: Parser
     data_yaml: DataYaml = DataYaml(
         account_manager_email="example@domain.com",
         profile="dell i7",
-        data_file="some_data.xlsx"
+        data_file="some_data.xlsx",
+        custom_order=custom_order,
     )
     
 
@@ -353,9 +354,7 @@ def test_get_processes(bulker: Bulker, data_yaml: DataYamlLoader, parser: Parser
         user_data[0],
         company_data[0],
         address_data[0],
-        data_yaml.account_manager_email,
-        custom_order,
-        False
+        data_yaml,
     )
 
     processes.extend(bulker.get_other_processes(mock_processer, data_yaml))

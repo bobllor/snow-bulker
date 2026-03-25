@@ -40,6 +40,12 @@ class CompanyFields(BaseModel):
         - `request_type`
         - `admin`
         - `usb`
+        - `account_type`
+        - `regional_sub_account`
+        - `national_sub_account`
+
+    The field `waiver` is a special field that requires a file upload. The `waiver` field
+    is the parent element that holds the `input` tag of the upload.
     '''
     operating_company: str
     project_id: str
@@ -57,6 +63,10 @@ class CompanyFields(BaseModel):
     desired_date: str
     start_date: str
     end_date: str
+    account_type: str
+    regional_sub_account: str
+    national_sub_account: str
+    waiver: str 
 
 class AddressFields(BaseModel):
     '''HTML fields for the address section.

@@ -69,7 +69,7 @@ class Parser:
         if not isinstance(file, pd.DataFrame):
             file = Path(file)
 
-        df: pd.DataFrame = pd.read_excel(file, dtype=str)
+        df: pd.DataFrame = pd.read_excel(file)
 
         # lowercase all keys
         df.rename(mapper=lambda x: x.strip().lower(), axis=1, inplace=True)

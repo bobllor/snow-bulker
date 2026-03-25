@@ -57,7 +57,6 @@ class ProgramStarter:
                 Run the driver in headless. By default it is False.
         '''
         bulk_res: Result[BulkData] = bulker.get_bulk_data(root_data)
-        self.logger.info(bulk_res.msg)
         # any type of file reading error will cause err to be true, even if
         # correct files are parsed. this double checks for no files found.
         if bulk_res.err:
