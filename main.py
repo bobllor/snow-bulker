@@ -96,7 +96,7 @@ if __name__ == "__main__":
                     yaml_content["config"], 
                     yaml_content["excel_root"],
                     yaml_content["html_fields"], 
-                    wait_time=5.5,
+                    wait_time=6,
                     headless=config.settings.headless,
                 )
 
