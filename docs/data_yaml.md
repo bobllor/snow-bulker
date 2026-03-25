@@ -32,6 +32,8 @@ custom dell i5s company 2:
   account_manager_email: manager.email1@domain.com
   data_file: company2-data.xlsx
   email_cache: company2-custom-dell-i5s-cache.txt
+  waiver_file: "Waiver.docx"
+  account_type: Regional
   custom_order:
     model: latitude 5450
     make: Dell
@@ -83,6 +85,15 @@ Getting the correct account manager email can be done as well.
 ```yaml
 account_manager_email: john.doe@example.gov
 ```
+
+### `account_type`
+
+The type of account for the company of the user.
+
+This is either `regional` or `national`. It is only used if the operating company contains `staffing`, otherwise
+it will do nothing for other operating company types.
+
+By default it is `regional`.
 
 ### `custom_order`
 
@@ -251,3 +262,12 @@ Values:
   - `adobe acrobat standard`
   - `adobe dreamweaver`
   - `adobe captivate`
+
+### `waiver_file`
+
+The waiver file name located in the `output` folder. This is used to upload a waiver file from the
+local disk into the *input element* of the form.
+If given, it will trigger a new workflow to add the file to the form.
+
+By default this is an empty string and is *not required*. However, if used, it must exist otherwise
+the order will fail.

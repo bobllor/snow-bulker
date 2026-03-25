@@ -52,6 +52,10 @@ company_fields:
   desired_date: "#field_b14"
   start_date: "#field_b15"
   end_date: "#field_b16"
+  account_type: "#field_b17"
+  regional_sub_account: "#field_b18"
+  national_sub_account: "#field_b19"
+  waiver: "#field_b20"
 address_fields:
   street: "#field_c1"
   city: "#field_c2"
