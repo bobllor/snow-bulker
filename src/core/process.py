@@ -410,7 +410,7 @@ class ProcessFields:
             comp_res: Result = func(*args)
 
             if comp_res.err:
-                return comp_res.err
+                return comp_res
 
         # NOTE: this is a new feature added by SNOW devs... staffing is required to have this.
         # i am unsure if this is permanent or a mistake.
