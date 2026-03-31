@@ -37,9 +37,11 @@ class ProgramSettings(BaseModel):
     '''Used to hold the configuration of the program.'''
     headless: Annotated[bool, BeforeValidator(lambda v: utils.return_bool(v, False))] = False
     log_level: Annotated[LogLevel, BeforeValidator(lambda v: utils.return_literal(v, LogLevel, "info"))] = "info"
+    refresh_timer: int | float = 6.5
+    timeout: int | float = 30
 
 class Config(BaseModel):
-    '''Class represaneting the config YAML file.'''
+    '''Class representing the config YAML file.'''
     auth_info: AuthInfo = AuthInfo()
     profile_url: ProfileUrl = ProfileUrl()
     settings: ProgramSettings = ProgramSettings()
