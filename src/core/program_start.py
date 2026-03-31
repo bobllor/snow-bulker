@@ -32,7 +32,6 @@ class ProgramStarter:
     root_data: RootData, 
     html_fields: HTMLFields, 
     *, 
-    wait_time: int | float = 5,
     headless: bool = False):
         '''Starting point for the program.
 
@@ -49,9 +48,6 @@ class ProgramStarter:
             
             html_fields: HTMLFields
                 The HTML YAML.
-
-            wait_time: int | float
-                The wait time after the cart is added to refresh. By default it is 5 seconds.
             
             headless: bool
                 Run the driver in headless. By default it is False.
@@ -89,7 +85,14 @@ class ProgramStarter:
 
         # reset back to 11, start_login sets this to 3 during the login process 
         driver.set_wait_timer(11)
-        bulker.start(bulk_res.content, html_fields, config.profile_url, driver=driver, wait_time=wait_time)
+        bulker.start(
+            bulk_res.content, 
+            html_fields, 
+            config.profile_url, 
+            driver=driver,
+            timeout=config.settings.timeout,
+            wait_time=config.settings.refresh_timer
+        )
 
     def start_login(self, login: Login, auth_info: AuthInfo) -> Result:
         '''Starts the login process. It returns a Result.
