@@ -3,13 +3,15 @@ from selenium.webdriver.common.keys import Keys
 from src.librelnium.driver import Driver
 from src.core.driver_utils import DriverUtils, driver_wrapper
 from src.support.types import CompanyData, UserData, AddressData, ReturnColumns
-from src.core.yaml.data_yaml.types import CustomOrder, SoftwareOptions, HardwareOptions, OperatingSystems
+from src.core.yaml.data_yaml.types import CustomOrder, SoftwareOptions, HardwareOptions, OperatingSystems, AccountType
 from src.core.yaml.html_yaml.types import HTMLFields, AddressFields, ClientFields, AddonFields, CompanyFields
 from src.core.yaml.html_yaml.types import ReturnFields, CustomHardwareFields
 from src.support.types import Result
 from typing import Callable, Any
 from logger import Log
 from datetime import datetime
+from pathlib import Path
+import src.support.utils as u
 
 class ProcessFields:
     '''Class to automate processing the fields of the ordering form. The core fields methods will require data
@@ -335,7 +337,9 @@ class ProcessFields:
     def start_company_fields(self, 
         company_data: CompanyData, 
         account_manager_email: str, 
-        require_region: bool = False, 
+        project_account_type: AccountType = "regional",
+        require_region: bool = False,
+        waiver_file: str = "",
         res: Result = None) -> Result:
         '''Starts the company field operations.
 
@@ -346,13 +350,21 @@ class ProcessFields:
             company_data: CompanyData
                 A dictionary consisting of the CompanyData of the Excel file.
             
-            account_manager_email: str
+            account_manager_email: AccountType
                 The email of the account manager. This is the manager of the user, and can either be the
                 actual manager or a requestor/point of contact. Obtained from the YAML configuration.
+
+            project_account_type: AccountType
+                The account type of the project. This is only used if the operating company contains "staffing",
+                otherwise it will be unused. By default it is "regional".
             
-            require_region: bool, default False
+            require_region: bool
                 Flag used to handle the Sales Region drop down. This is required to be True if the *operating company*
-                is Global Services, any other value does not require this.
+                is Global Services, any other value does not require this. By default it is False.
+            
+            waiver_file: str
+                The waiver file name, this must include the extension. If a waiver file is included, then it will trigger
+                a new waiver workflow that adds the waiver to the input file. By default it is an empty string.
 
             res: Result
                 The Result of the method call. This should be left empty for the decorator
@@ -398,8 +410,21 @@ class ProcessFields:
             comp_res: Result = func(*args)
 
             if comp_res.err:
-                comp_res.err
-                return res
+                return comp_res
+
+        # NOTE: this is a new feature added by SNOW devs... staffing is required to have this.
+        # i am unsure if this is permanent or a mistake.
+        if "staffing" in company_data["operating company"].lower():
+            res.content = self.get_res_content("project account type", fields.account_type)
+            self.utils.handle_dropdown(value=fields.account_type, key=project_account_type, send_enter=True, wait_time=.8)
+            res.content = self.get_res_content("regional sub account", fields.regional_sub_account)
+            self.utils.handle_dropdown(
+                value=fields.regional_sub_account, 
+                key=company_data["region"], 
+                send_enter=True, 
+                send_down=True, 
+                wait_time=.8
+            )
 
         # NOTE: the key will be new device as a new order will always be a new device.
         res.content = self.get_res_content("request type", fields.request_type)
@@ -410,6 +435,11 @@ class ProcessFields:
         self.utils.handle_dropdown(value=fields.admin, key="No", send_enter=True, send_down=True, wait_time=.8)
         res.content = self.get_res_content("universal serial bus storage", fields.usb)
         self.utils.handle_dropdown(value=fields.usb, key="No", send_enter=True, send_down=True, wait_time=.8)
+
+        if waiver_file != "":
+            waiver_res: Result = self.upload_waiver(waiver_file)
+            if waiver_res.err:
+                return waiver_res
 
         return res
 
@@ -698,10 +728,15 @@ class ProcessFields:
             key: str = keys[i]
 
             res.content = self.get_res_content(key, field)
-            element: WebElement = self.driver.find_element("css selector", field)
+            element: WebElement = self.driver.find_element("css selector", field) 
 
-            if element.get_attribute("value").strip() == "":
-                element.send_keys(company_str)
+            if element.get_attribute("value").strip() != "":
+                self.driver.click(element, pause=.2)
+                self.driver.action_driver\
+                    .key_down(Keys.CONTROL)\
+                        .key_down("A").pause(.1).send_keys(Keys.BACK_SPACE).pause(.1).key_up(Keys.CONTROL).perform()
+
+            element.send_keys(company_str)
             
         return res
 
@@ -736,6 +771,28 @@ class ProcessFields:
     
         self.driver.click(add_button, pause=pause)
         
+        return res
+    
+    @driver_wrapper
+    def upload_waiver(self, waiver_file: str, res: Result = None) -> Result:
+        '''Uploads the waiver.'''
+        if res is None:
+            res = Result()
+        res.msg = self.get_res_msg("Upload waiver")
+
+        res.content = self.get_res_content("waiver upload", self.html_fields.company_fields.waiver)
+        waiver_main_element: WebElement = self.driver.find_element("css selector", self.html_fields.company_fields.waiver)
+
+        waiver_path: Path | None = u.get_file(Path("output"), waiver_file, skip_dir=True)
+        if waiver_path is None:
+            res.err = True
+            res.content = self.get_res_content("waiver file search", "N/A")
+            return res
+
+        res.content = self.get_res_content("waiver input element", "N/A")
+        waiver_input: WebElement = waiver_main_element.find_element("tag name", "input")
+        waiver_input.send_keys(str(waiver_path.absolute()))
+
         return res
     
     def get_res_msg(self, process: str) -> str:
