@@ -18,6 +18,8 @@ auth_info:
 settings:
   headless: false
   log_level: "info"
+  refresh_timer: 6.5
+  timeout: 30
 profile_url:
   returns: returns-url.com
   custom: custom-url.com
