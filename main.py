@@ -90,16 +90,18 @@ if __name__ == "__main__":
                 if hot_config.settings.log_level != config.settings.log_level:
                     logger = Log(log_level=hot_config.settings.log_level)
 
+                logger.debug(f"Config program settings: {hot_config.settings}")
                 bulker: Bulker = Bulker(project_root, logger=logger)
                 starter.start(
                     bulker, 
                     yaml_content["config"], 
                     yaml_content["excel_root"],
                     yaml_content["html_fields"], 
-                    wait_time=6,
-                    headless=config.settings.headless,
+                    headless=hot_config.settings.headless,
                 )
 
+                # update config to the new loaded hot_config
+                config = hot_config
                 runner.enter_to_continue()
 
                 # TODO: display the final result with the automation, this requires

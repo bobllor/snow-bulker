@@ -69,6 +69,7 @@ class Bulker:
     html_fields: HTMLFields,
     profile_urls: ProfileUrl,
     *, 
+    timeout: float | int = 30,
     wait_time: float | int = 3,
     driver: Driver = None,
     refresh: bool = True):
@@ -82,6 +83,10 @@ class Bulker:
         
         html_fields: HTMLFields
             The data of the parsed HTML YAML file.
+
+        timeout: float | int
+            The time in seconds that is used for Driver wait time before causing a timeout exception.
+            By default this is 30 seconds.
 
         wait_time: float | int
             The waiting time in seconds after a successful order submission before a page refresh.
@@ -99,6 +104,8 @@ class Bulker:
 
         processor: ProcessFields = ProcessFields(driver, html_fields, logger=self.logger)
 
+        driver.set_wait_timer(timeout)
+
         for data in bulk_data:
             d_yaml: DataYaml = data.config
             if d_yaml.ignore:
@@ -108,7 +115,6 @@ class Bulker:
             self.logger.info(f"Starting section {data.section}")
 
             url: str = utils.get_profile_url(d_yaml.profile, profile_urls)
-
             try:
                 driver.go_to(url)
             except InvalidArgumentException:
@@ -116,6 +122,8 @@ class Bulker:
                 continue
 
             if not data.is_return_profile: 
+                self.logger.debug(f"Profile size: {len(data.excel_data['address'])}")
+
                 self.run_excel(
                     driver, 
                     processor, 
@@ -129,6 +137,8 @@ class Bulker:
                     section=data.section,
                 )
             else:
+                self.logger.debug(f"Profile size: {len(data.excel_data['return_data'])}")
+
                 self.run_return(
                     driver,
                     processor,

@@ -84,3 +84,18 @@ def test_wrong_log_literal(config_yaml: ConfigYamlLoader):
     assert not res.err
 
     assert res.content.settings.log_level in get_args(LogLevel)
+
+def test_default_values(config_yaml: ConfigYamlLoader):
+    pass
+
+def test_config_timers(config_yaml: ConfigYamlLoader):
+    raw: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG, lower=True)
+
+    res: Result[Config] = config_yaml.validate(raw)
+    assert not res.err
+
+    base_refresh: float = 6.5
+    base_timeout: int = 30
+
+    assert res.content.settings.timeout == base_timeout
+    assert res.content.settings.refresh_timer == base_refresh
