@@ -34,6 +34,8 @@ auth_info:
       button_element: "#signin-selector" # must be in quotations due to this being an ID selector
 settings:
   headless: false
+  timeout: 30
+  refresh_timer: 6.5
   log_level: "info"
 profile_url: 
   returns: "profile-url.com" 
@@ -70,23 +72,43 @@ There are three dictionaries used in the file:
 This dictionary holds the information for the program logic. These values are not required
 and will not cause an error if left empty.
 
+#### `timeout`
+
+Default: `30`
+
+Timeout is the timer used for how long the Driver will wait during a process pause before causing
+a timeout error *when the device URL page* is accessed.
+
+It is primarily to handle long loading pages on the first load of an automated process.
+
+#### `refresh_timer`
+
+Default: `6.5`
+
+Refresh timer is used to wait before the page is refreshed during automation. This is only applied at the
+end of a process, while waiting for the API to process the request to add into the cart.
+
 #### `headless`
 
 Default: `false`
 
-Makes the WebDriver headless, in other words the browser is ran in the background when the automation process starts.
+Puts the WebDriver into headless mode, in other words the browser is ran in the background when the automation process starts.
 
 > IMPORTANT
 >
 > If this is `true`, then do not interrupt the program with `Ctrl + C` during the automation process.
 > The program will likely fail to close the browser and be left open, consuming resources despite being unused. 
 > It is *recommended to leave this as `false`* since it can manually be closed in case of failure.
+> 
+> The fragile nature of Selenium and how many fields this automates can cause errors. Additionally, the developers
+> of the ServiceNow instance often is changing the form without informing me, causing more unknown errors.
 
 #### `log_level`
 
 Default: `info`
 
 The level for the log which will *display on the terminal*. By default, it is `info`.
+This does not affect the actual logging to file, it only affects `stdout`.
 
 This field has *fixed values*:
 - `debug`
