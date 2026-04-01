@@ -400,3 +400,11 @@ def test_fail_users_start(_, data_yaml: DataYamlLoader, bulker: Bulker):
     mock_driver.find_elements.return_value = [mock_element]
 
     bulker.start(bulk_res.content, mock_html, mock_profile_urls, driver=mock_driver)
+
+def test_data_path(tmp_path: Path):
+    data_path: Path = tmp_path / "some-data-folder-here"
+    bulker: Bulker = Bulker(tmp_path, data_path=data_path)
+
+    bulker.check_project_files()
+
+    assert data_path.exists() and data_path == bulker.data_path
