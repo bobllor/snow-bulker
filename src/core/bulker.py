@@ -26,6 +26,7 @@ class Bulker:
     def __init__(self, 
             project_path: Path | str = None,
             *, 
+            data_path: Path | str = None,
             parser: Parser = None,
             logger: Log = None):
         '''Create a new Bulker.
@@ -39,6 +40,11 @@ class Bulker:
             parser: Parser
                 The parser for the Excel file, used to read and format the file into the
                 expected data. By default it is None and uses a default Parser object.
+            
+            data_path: Path | str
+                The PathStr to the data folder. This is where the Excel files will be stored in.
+                If the folder does not exist, then it will be created with its parents.
+                By default it is None, using the project root directory.
 
             logger: Log
                 The Log object. By default it is None and will output to stdout.
@@ -52,7 +58,7 @@ class Bulker:
         # logs folder
         self._log_path: Path = self.project_path / "output" / "logs"
         # excel data folder
-        self._data_path: Path = self.project_path / "output" / "data"
+        self._data_path: Path = data_path or self.project_path / "output" / "data"
         # email cache folder
         self._cache_path: Path = self.project_path / "output" / "cache"
 
