@@ -2,7 +2,7 @@ from logger import Log
 from pathlib import Path
 from src.librelnium.driver import Driver
 from selenium.common.exceptions import InvalidArgumentException
-from src.support.types import AddressData, CompanyData, UserData, ExcelData, Result, ReturnData, BulkData
+from src.support.types import AddressData, CompanyData, UserData, ExcelData, Result, ReturnData, BulkData, UserInfo
 from src.core.yaml.data_yaml.types import CustomOrder
 from src.core.parser import Parser, ReturnColumns
 from src.core.process import ProcessFields
@@ -26,7 +26,7 @@ class Bulker:
     def __init__(self, 
             project_path: Path | str = None,
             *, 
-            data_path: Path | str = None,
+            data_folder: Path | str = None,
             parser: Parser = None,
             logger: Log = None):
         '''Create a new Bulker.
@@ -41,7 +41,7 @@ class Bulker:
                 The parser for the Excel file, used to read and format the file into the
                 expected data. By default it is None and uses a default Parser object.
             
-            data_path: Path | str
+            data_folder: Path | str
                 The PathStr to the data folder. This is where the Excel files will be stored in.
                 If the folder does not exist, then it will be created with its parents.
                 By default it is None, using the project root directory.
@@ -49,16 +49,25 @@ class Bulker:
             logger: Log
                 The Log object. By default it is None and will output to stdout.
         '''
-        # default path is expected to be root/src/core, with the target being root
-        self.project_path: Path = Path(project_path) or Path(__file__).parent.parent
+        # only used if project_path is None
+        project_root_path: Path = Path(__file__).parent.parent.parent
+        if project_path is None:
+            project_path = project_root_path
+
+        self.project_path: Path = Path(project_path)
+        if data_folder is None:
+            data_folder = self.project_path / "output" / "data"
+
         self.logger: Log = logger or Log() 
 
         self.parser: Parser = parser or Parser(logger=self.logger)
 
+        # excel data folder, this can be user defined or by default in root/output/data
+        self._data_path: Path = Path(data_folder)
+
+        # paths below cannot be changed, these will always be in the project root.
         # logs folder
         self._log_path: Path = self.project_path / "output" / "logs"
-        # excel data folder
-        self._data_path: Path = data_path or self.project_path / "output" / "data"
         # email cache folder
         self._cache_path: Path = self.project_path / "output" / "cache"
 
@@ -215,16 +224,28 @@ class Bulker:
         self._failed_users.clear()
         data_len: int = len(user_data)
 
-        for i in range(data_len):
+        users_to_process: list[int] = self._get_users_to_process(user_data, email_cache)
+        users_to_process_len: int = len(users_to_process)
+
+        self.logger.debug(f"{users_to_process_len}") 
+        self.logger.info(f"Found {data_len - users_to_process_len}/{data_len} users in cache")
+
+        if users_to_process_len == 0:
+            self.logger.info(f"No orders to process")
+            return
+
+        self.logger.info(f"Processing orders for {users_to_process_len} user(s)")
+
+        for count, i in enumerate(users_to_process):
             curr_user: UserData = user_data[i]
             curr_company: CompanyData = company_data[i]
             curr_address: AddressData = address_data[i]
 
-            index: str = f"User {i + 1}"
+            index: str = f"User {count + 1}"
             user_name: str = curr_user["full name"]
             user_email: str = curr_user["email"].lower()
             if user_email in email_cache:
-                self.logger.info(f"{index}: Skipping user {user_name}")
+                #self.logger.info(f"{index}: Skipping user {user_name}")
                 continue
             
             processes: list[ProcessObject] = self.get_main_processes(
@@ -325,15 +346,28 @@ class Bulker:
         self._failed_users.clear()
         data_len: int = len(return_data)
 
-        for i, obj in enumerate(return_data):
+        users_to_process: list[int] = self._get_users_to_process(return_data, email_cache)
+        users_to_process_len: int = len(users_to_process)
+
+        self.logger.debug(f"{users_to_process_len}") 
+        self.logger.info(f"Found {data_len - users_to_process_len}/{data_len} users in cache")
+
+        if users_to_process_len == 0:
+            self.logger.info(f"No orders to process")
+            return
+
+        self.logger.info(f"Processing orders for {users_to_process_len} user(s)")
+
+        for count, i in enumerate(users_to_process):
+            obj: ReturnColumns = return_data[i]
             return_processes: list[ProcessObject] = self.get_return_processes(processor, obj, account_manager_email)
 
             user_name: str = obj["full name"]
-            index: str = f"User {i + 1}"
+            index: str = f"User {count + 1}"
             user_email: str = obj["email"].lower().strip()
 
             if user_email in email_cache:
-                self.logger.info(f"{index}: Skipping user {user_name}")
+                #self.logger.info(f"{index}: Skipping user {user_name}")
                 continue
 
             self.logger.info(f"{index}: Starting user {user_name}")
@@ -369,6 +403,28 @@ class Bulker:
         if failed_len > 0:
             self.logger.warning(f"Failed {failed_len}/{data_len} users for section {section}.")
             self.logger.warning("\n".join(self.failed_users))
+
+    def _get_users_to_process(self, data: list[UserInfo], email_cache: set[str]) -> list[int]:
+        '''Parses the user data and looks for already used emails in the email cache, it will
+        return a list of indices for users that do not have an entry in the cache for
+        processing.
+    
+        Parameters
+        ----------
+            user_data: list[UserInfo]
+                A list of UserInfo dictionaries. UserInfo contains
+                the following two keys: `full name` and `email`.
+        '''
+        valid_users_indices: list[int] = []
+
+        for i, user in enumerate(data):
+            if user["email"].lower() in email_cache:
+                continue
+
+            valid_users_indices.append(i)
+
+        return valid_users_indices
+    
     
     def run_wrapper(self, func: Callable[[Any], Any], *, args: tuple[Any] = ()) -> Result:
         '''Runs a given function in a try-except block. A Result is returned.
@@ -732,7 +788,7 @@ class Bulker:
         result.err = failed == total_sections
 
         return result
-    
+
     @property
     def failed_users(self) -> list[str]:
         '''A list of users that failed during the automation process.'''
