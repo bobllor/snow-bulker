@@ -401,9 +401,26 @@ def test_fail_users_start(_, data_yaml: DataYamlLoader, bulker: Bulker):
 
     bulker.start(bulk_res.content, mock_html, mock_profile_urls, driver=mock_driver)
 
-def test_data_path(tmp_path: Path):
+def test_default_data_path(tmp_path: Path):
+    bulker: Bulker = Bulker(tmp_path)
+    bulker.check_project_files()
+
+    root_dir: Path = bulker.project_path
+
+    paths: list[Path] = [
+        bulker.cache_path,
+        bulker.data_path,
+        bulker._log_path,
+    ]
+
+    for path in paths:
+        file_name: str = path.name
+
+        assert (root_dir / "output" / file_name).exists()
+
+def test_new_data_path(tmp_path: Path):
     data_path: Path = tmp_path / "some-data-folder-here"
-    bulker: Bulker = Bulker(tmp_path, data_path=data_path)
+    bulker: Bulker = Bulker(tmp_path, data_folder=data_path)
 
     bulker.check_project_files()
 

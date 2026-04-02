@@ -20,6 +20,7 @@ settings:
   log_level: "info"
   refresh_timer: 6.5
   timeout: 30
+  data_folder: "C:\\Some\\Path\\Here\\DoesNot\\Exist"
 profile_url:
   returns: returns-url.com
   custom: custom-url.com
