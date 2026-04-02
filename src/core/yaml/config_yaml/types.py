@@ -39,6 +39,7 @@ class ProgramSettings(BaseModel):
     log_level: Annotated[LogLevel, BeforeValidator(lambda v: utils.return_literal(v, LogLevel, "info"))] = "info"
     refresh_timer: int | float = 6.5
     timeout: int | float = 30
+    data_folder: str = None
 
 class Config(BaseModel):
     '''Class representing the config YAML file.'''

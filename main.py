@@ -91,7 +91,11 @@ if __name__ == "__main__":
                     logger = Log(log_level=hot_config.settings.log_level)
 
                 logger.debug(f"Config program settings: {hot_config.settings}")
-                bulker: Bulker = Bulker(project_root, logger=logger)
+                bulker: Bulker = Bulker(
+                    project_root, 
+                    data_folder=hot_config.settings.data_folder, 
+                    logger=logger
+                )
                 starter.start(
                     bulker, 
                     yaml_content["config"], 

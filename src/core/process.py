@@ -85,7 +85,7 @@ class ProcessFields:
             res = Result()
         res.msg = "Current process: Address Fields"
 
-        self.logger.info("Starting address fields")
+        self.logger.debug(f"Address data: {address_data}")
         # country and state requires special interactions due to them being a drop down element.
         fields: AddressFields = self.html_fields.address_fields
         address_values: dict[str, str] = {
@@ -136,7 +136,7 @@ class ProcessFields:
         res.msg = self.get_res_msg("User fields")
 
         fields: ClientFields = self.html_fields.client_fields
-        self.logger.info("Starting user fields")
+        self.logger.debug(f"User data: {user_data}")
 
         res.content = self.get_res_content("username", fields.name)
         self.utils.handle_dropdown(value=fields.name, key=user_data["email"])
@@ -220,10 +220,8 @@ class ProcessFields:
         res.msg = self.get_res_msg("Desired Software")
 
         fields: AddonFields = self.html_fields.addon_fields
-        self.logger.info("Starting desired software fields")
+        self.logger.debug(f"Desired software: {desired_software}")
         if desired_software != "":
-            self.logger.info(f"Starting desired software, got {desired_software}")
-
             res.content = self.get_res_content("software not listed", fields.software_not_listed)
             not_listed_element: WebElement = self.driver.find_element("css selector", fields.software_not_listed)
             not_listed_element.click()
@@ -258,7 +256,7 @@ class ProcessFields:
         fields: AddonFields = self.html_fields.addon_fields
 
         if len(software_list) > 0:
-            self.logger.info("Starting software option fields")
+            self.logger.debug(f"Software list: {software_list}")
 
             # these are HTML options.
             # they have underscores from the schema, it must be replaced
@@ -309,7 +307,7 @@ class ProcessFields:
         fields: AddonFields = self.html_fields.addon_fields
 
         if len(hardware_list) > 0:
-            self.logger.info("Starting hardware options")
+            self.logger.debug(f"Hardware list: {hardware_list}")
 
             # same issue as start_software_option_fields.
             hardware_options: dict[str, str] = {key.replace("_", " "): val for key, val in dict(fields.hardware).items()}
@@ -375,7 +373,7 @@ class ProcessFields:
         res.msg = self.get_res_msg("company fields")
         
         fields: CompanyFields = self.html_fields.company_fields
-        self.logger.info("Starting company fields")
+        self.logger.debug(f"Company data: {company_data}")
 
         res.content = self.get_res_content("operating company", fields.operating_company)
         self.utils.handle_dropdown(value=fields.operating_company, key=company_data["operating company"], send_enter=True, wait_time=.8)
@@ -465,7 +463,7 @@ class ProcessFields:
         res.msg = self.get_res_msg("custom field")
 
         fields: CustomHardwareFields = self.html_fields.custom_fields
-        self.logger.info("Starting custom fields")
+        self.logger.debug(f"Custom data: {custom_data}")
 
         res.content = self.get_res_content("make", fields.make)
         make_element: WebElement = self.driver.find_element("css selector", fields.make)
@@ -521,7 +519,6 @@ class ProcessFields:
         res.msg = self.get_res_msg("Return Fields")
 
         fields: ReturnFields = self.html_fields.return_fields
-        self.logger.info("Starting return fields")
         self.logger.debug(f"Return data: {return_data}")
 
         res.content = self.get_res_content("request type", fields.request_type)
@@ -648,9 +645,9 @@ class ProcessFields:
         res.msg = self.get_res_msg("Return Fields")
 
         fields: AddonFields = self.html_fields.addon_fields
+        self.logger.debug(f"Operating system type: {os_type}")
 
         res.content = self.get_res_content("operating system fields", fields.operating_system)
-        self.logger.info("Starting OS fields")
         self.utils.handle_dropdown(value=fields.operating_system, key=os_type, send_tab=True, wait_time=.8)
 
         return res

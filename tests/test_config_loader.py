@@ -85,8 +85,13 @@ def test_wrong_log_literal(config_yaml: ConfigYamlLoader):
 
     assert res.content.settings.log_level in get_args(LogLevel)
 
-def test_default_values(config_yaml: ConfigYamlLoader):
-    pass
+def test_config_data_folder(config_yaml: ConfigYamlLoader):
+    raw: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG, lower=True)
+
+    res: Result[Config] = config_yaml.validate(raw)
+    assert not res.err
+
+    assert res.content.settings.data_folder is not None 
 
 def test_config_timers(config_yaml: ConfigYamlLoader):
     raw: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG, lower=True)

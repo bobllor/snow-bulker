@@ -12,6 +12,14 @@ class Result(Generic[T]):
     err: bool = False
     content: T = None
 
+UserInfo = TypedDict(
+    "UserInfo",
+    {
+        "full name": str,
+        "email": str,
+    }
+)
+
 UserData = TypedDict(
     "UserData",
     {
