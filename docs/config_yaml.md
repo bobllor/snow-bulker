@@ -36,6 +36,7 @@ settings:
   headless: false
   timeout: 30
   refresh_timer: 6.5
+  data_folder: C:/Path/To/Data/Folder
   log_level: "info"
 profile_url: 
   returns: "profile-url.com" 
@@ -87,6 +88,15 @@ Default: `6.5`
 
 Refresh timer is used to wait before the page is refreshed during automation. This is only applied at the
 end of a process, while waiting for the API to process the request to add into the cart.
+
+#### `data_folder`
+
+Default: None
+
+The folder path to where the Excel data files are stored. By default if it is None, it will use the 
+project's root as the folder to check.
+
+This folder is automatically created if it does not exist.
 
 #### `headless`
 
