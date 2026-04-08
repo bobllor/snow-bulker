@@ -119,9 +119,8 @@ class Bulker:
 
         processor: ProcessFields = ProcessFields(driver, html_fields, logger=self.logger)
 
-        driver.set_wait_timer(timeout)
-
         for data in bulk_data:
+            driver.set_wait_timer(timeout)
             d_yaml: DataYaml = data.config
             if d_yaml.ignore:
                 self.logger.info(f"Skipped section {data.section} (ignore is {d_yaml.ignore})")
@@ -149,6 +148,7 @@ class Bulker:
                     url=url, 
                     refresh=refresh, 
                     wait_time=wait_time,
+                    default_timeout=timeout,
                     section=data.section,
                 )
             else:
@@ -164,6 +164,7 @@ class Bulker:
                     url=url,
                     refresh=refresh,
                     wait_time=wait_time,
+                    default_timeout=timeout,
                     section=data.section,
                 )
     
@@ -178,6 +179,7 @@ class Bulker:
         url: str,
         refresh: bool,
         wait_time: int,
+        default_timeout: int,
         section: str = "",
         ) -> None:
         '''Runs the normal Excel process.
@@ -212,6 +214,10 @@ class Bulker:
                 The time to wait before refreshing. This is required due to the order not
                 processing in time before the refresh. It is applied after clicking the
                 add to cart button.
+
+            default_timeout: int
+                The timeout for the page load. This is used for resetting the timeout back on each page load
+                to reduce the timeout lock when the page is loaded but an element is not found.
         
             section: str
                 The section name of the data YAML. By default it is an empty string.
@@ -245,7 +251,6 @@ class Bulker:
             user_name: str = curr_user["full name"]
             user_email: str = curr_user["email"].lower()
             if user_email in email_cache:
-                #self.logger.info(f"{index}: Skipping user {user_name}")
                 continue
             
             processes: list[ProcessObject] = self.get_main_processes(
@@ -256,7 +261,12 @@ class Bulker:
                 yaml_data,
             )
             processes.extend(self.get_other_processes(processor, yaml_data))
-            
+
+            processor.wait_for_page_load(
+                "css selector", 
+                processor.html_fields.company_fields.account_manager,
+                7
+            ) 
             self.logger.info(f"{index}: Starting user {user_name}")
             has_error: bool = False
             for process in processes:
@@ -267,6 +277,7 @@ class Bulker:
                     has_error = True
                     break
 
+            driver.set_wait_timer(default_timeout)
             if has_error:
                 self.logger.error(f"{index}: Failed to process order for {user_name}")
                 self._failed_users.append(user_name)
@@ -301,6 +312,7 @@ class Bulker:
         url: str,
         refresh: bool,
         wait_time: int,
+        default_timeout: int,
         section: str = "",
         ) -> None:
         '''Runs the return Excel process.
@@ -336,6 +348,10 @@ class Bulker:
             The time to wait before refreshing. This is required due to the order not
             processing in time before the refresh. It is applied after clicking the
             add to cart button.
+
+        default_timeout: int
+            The timeout for the page load. This is used for resetting the timeout back on each page load
+            to reduce the timeout lock when the page is loaded but an element is not found.
         
         section: str
             The section name of the data YAML. By default it is an empty string.
@@ -367,12 +383,16 @@ class Bulker:
             user_email: str = obj["email"].lower().strip()
 
             if user_email in email_cache:
-                #self.logger.info(f"{index}: Skipping user {user_name}")
                 continue
 
             self.logger.info(f"{index}: Starting user {user_name}")
             has_error: bool = False
 
+            processor.wait_for_page_load(
+                "css selector", 
+                processor.html_fields.company_fields.account_manager,
+                7
+            ) 
             for process in return_processes:
                 res: Result = self.run_wrapper(process["func"], args=process["args"])
 
@@ -381,6 +401,7 @@ class Bulker:
                     has_error = True
                     break
 
+            driver.set_wait_timer(default_timeout)
             if has_error:
                 self.logger.error(f"{index}: Failed to process return order for {user_name}")
                 self._failed_users.append(user_name)

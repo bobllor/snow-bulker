@@ -1,6 +1,7 @@
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.keys import Keys
 from src.librelnium.driver import Driver
+from src.librelnium.support.types import Locator
 from src.core.driver_utils import DriverUtils, driver_wrapper
 from src.support.types import CompanyData, UserData, AddressData, ReturnColumns
 from src.core.yaml.data_yaml.types import CustomOrder, SoftwareOptions, HardwareOptions, OperatingSystems, AccountType
@@ -791,6 +792,19 @@ class ProcessFields:
         waiver_input.send_keys(str(waiver_path.absolute()))
 
         return res
+    
+    @driver_wrapper
+    def wait_for_page_load(self, locator: Locator, element_value: str, new_timeout: int, _: Result = None) -> None:
+        '''A blocking method used to wait for to confirm the page loads.
+        It finds a target element value and waits until that target element is selectable,
+        and then it will update the timeout to a lower time for the process.
+
+        The caller is responsible for resetting the timeout back to its original timeout.
+        '''
+        # only care if it can be found, nothing is done on this element
+        self.driver.find_element(locator, element_value)
+
+        self.driver.set_wait_timer(new_timeout)
     
     def get_res_msg(self, process: str) -> str:
         '''Creates a new string for Result.msg. `process` will be
