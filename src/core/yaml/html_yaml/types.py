@@ -182,6 +182,7 @@ class ReturnFields(BaseModel):
 class CheckoutFields(BaseModel):
     '''Fields handling the HTML elements related to checking out orders.'''
     cart_dropdown: str
+    notification: str
     add_to_cart_button: str
     add_cart_selector: Locator = "name" # due to this being the only non-css selector, this will be selectable
 
