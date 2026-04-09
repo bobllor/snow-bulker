@@ -233,7 +233,6 @@ class Bulker:
         users_to_process: list[int] = self._get_users_to_process(user_data, email_cache)
         users_to_process_len: int = len(users_to_process)
 
-        self.logger.debug(f"{users_to_process_len}") 
         self.logger.info(f"Found {data_len - users_to_process_len}/{data_len} users in cache")
 
         if users_to_process_len == 0:
@@ -284,14 +283,14 @@ class Bulker:
                 driver.go_to(url)
                 continue
             
-            add_res: Result = processor.add_to_cart(wait_time)
+            add_res: Result = processor.add_to_cart(3)
 
             if not add_res.err:
                 self.logger.info(f"{index}: User {user_name} created")
                 email_cache = self.add_to_cache(curr_user["email"], email_cache, cache_file_path)
             else:
-                self.logger.info(f"{index}: Failed to add {user_name} to cart, skipping cache")
-                self.logger.error(add_res.msg, add_res.content)
+                self.logger.info(f"{index}: Failed to add {user_name} to cart")
+                self.logger.error(f"{add_res.msg}, {add_res.content}")
 
             if refresh:
                 driver.driver.refresh()
@@ -365,7 +364,6 @@ class Bulker:
         users_to_process: list[int] = self._get_users_to_process(return_data, email_cache)
         users_to_process_len: int = len(users_to_process)
 
-        self.logger.debug(f"{users_to_process_len}") 
         self.logger.info(f"Found {data_len - users_to_process_len}/{data_len} users in cache")
 
         if users_to_process_len == 0:
@@ -414,7 +412,7 @@ class Bulker:
                 self.logger.info(f"{index}: User {user_name} created")
                 email_cache = self.add_to_cache(user_email, email_cache, cache_file_path)
             else:
-                self.logger.info(f"{index}: Failed to add {user_name} to cart, skipping cache")
+                self.logger.info(f"{index}: Failed to add {user_name} to cart")
                 self.logger.error(add_res.msg, add_res.content)
 
             if refresh:
@@ -664,7 +662,7 @@ class Bulker:
                     "return_data": self.parser.get_return_data(df)
                 }
         except Exception as e:
-            self.logger.error(f"Failed to parse Excel {data_path.name}: {e}")
+            self.logger.error(f"Failed to parse Excel {data_path.name}:\n{e}")
             return None
 
         return data
