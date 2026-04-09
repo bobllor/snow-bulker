@@ -26,7 +26,9 @@ class DriverUtils:
             send_down: bool = False,
             send_enter: bool = False, 
             send_tab: bool = False,
-            wait_time: int | float = .5) -> None:
+            wait_time: int | float = .5,
+            post_wait: int | float = .5,
+        ) -> None:
         '''Handles the special dropdown menu with certain fields. It requires the element
         and the key to send to the element.
 
@@ -44,7 +46,7 @@ class DriverUtils:
             
             send_down: bool, default `False`
                 Boolean that indicates whether or not to hit the down arrow key. By default it is False. If True,
-                then send_enter will automatically be True.
+                then `send_enter` will automatically be True.
                 
             send_enter: bool, default `False`
                 Boolean that indicates whether or not to hit the Enter key after sending the key to the field.
@@ -57,24 +59,26 @@ class DriverUtils:
             wait_time: int | float, default `.5`
                 The wait time before the Enter key is submitted. It is recommended to keep this at a minimum 0.3 seconds
                 to avoid raising an ElementIntercepted exception. By default it is 0.5 seconds.
+            
+            post_wait: int | float
+                The wait time after a key is sent. This is applied to all key sending. By default it is
+                0.5 seconds.
         '''
         if isinstance(value, str):
             self.driver.find_element("css selector", value).click()
         elif isinstance(value, WebElement):
             value.click()
             
-        self.driver.action_driver.send_keys(key).perform()
+        self.driver.action_driver.send_keys(key).pause(post_wait).perform()
 
         if send_down:
-            self.driver.action_driver.pause(wait_time).send_keys(Keys.ARROW_DOWN).perform()
+            self.driver.action_driver.pause(wait_time).send_keys(Keys.ARROW_DOWN).pause(post_wait).perform()
             
             send_enter = True
         if send_enter:
-            self.driver.action_driver.pause(wait_time).send_keys(Keys.ENTER).perform()
+            self.driver.action_driver.pause(wait_time).send_keys(Keys.ENTER).pause(post_wait).perform()
         if send_tab:
-            self.driver.action_driver.pause(wait_time).send_keys(Keys.TAB).perform()
-
-        time.sleep(wait_time)
+            self.driver.action_driver.pause(wait_time).send_keys(Keys.TAB).pause(post_wait).perform()
 
 P = ParamSpec("P") 
 R = TypeVar("R")
@@ -82,6 +86,8 @@ R = TypeVar("R")
 def driver_wrapper(func: Callable[P, R]) -> Callable[P, R]:
     '''Wraps a Selenium-related function with common exception issues and captures it into a
     Result.
+
+    The function must have an argument for Result.
     '''
     # exception messages
     EXC_FAIL_FIND_ELE_MSG: str = "Driver failed to find target element"
