@@ -292,21 +292,65 @@ def get_path_files(root: Path) -> list[Path]:
     
     return data
 
-def format_postal(postal: str) -> str:
-    '''Formats the postal code to the correct length. 
-    
-    This is only used due to Excel files trimming the leading zero by default.
-    Normal postal codes (len == 5) or Canadian postal codes will not be affected by this.
+def format_validate_postal(postal: str) -> str:
+    '''Formats and validates the postal. This works for both US and Canada postals.
+
+    If the postal is less than 5 in length, then it will automatically append leading 0s.
+    This is due to Excel and Pandas trimming leading 0s with numbers.
+
+    If the length of the postal is greater than 5 and is not a Canada postal, then
+    a ValueError is raised.
     '''
-    # if >= 5, then it is either a normal 5 digit postal or its canada
-    if len(postal) >= 5:
+    is_canada: bool = is_canada_postal(postal)
+    if is_canada:
         return postal
 
-    new_postal: list[str] = []
+    if len(postal) > 5:
+        raise ValueError(f"Invalid postal {postal} given")
 
+    # always going to assume missing numbers is a leading 0, this is due to excel
+    # and pandas trimming numbers by default.
+    new_postal: list[str] = []
     for _ in range(5 - len(postal)):
         new_postal.append("0")
     
     new_postal.extend(postal)
 
     return "".join(new_postal)
+
+def is_canada_postal(postal: str) -> bool:
+    '''Checks if the postal is Canada based. If the postal is valid, then it will
+    return True, otherwise it will return False.
+
+    Valid postals: `A1A1A1`, `A1A 1A1`
+    '''
+    letter_count: int = 0
+    number_count: int = 0
+    for c in postal:
+        if c.isalpha():
+            letter_count += 1
+        if c.isnumeric():
+            number_count += 1
+
+    if len(postal) not in [6, 7] or letter_count != 3 or number_count != 3:
+        return False
+    
+    return True
+
+def convert_country_to_full(country: str) -> str:
+    '''Checks if the country is abbreviated and returns the full name.
+    This supports Canada and US only.
+    '''
+    country = country.lower()
+    us_abbrev: set[str] = {"us", "usa", "america"}
+    ca_abbrev: set[str] = {"ca", "can"}
+
+    us: str = "United States"
+    ca: str = "Canada"
+
+    if country in us_abbrev:
+        return us 
+    elif country in ca_abbrev: 
+        return ca
+    
+    return country.title()
