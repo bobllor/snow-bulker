@@ -109,24 +109,31 @@ def test_format_alpha_pid():
 
         assert val == new_val
 
-def test_format_normal_postal():
+def test_format_normal_us_postal():
     postals: list[str] = [
         "1234",
         "12435",
         "33332",
         "5632",
         "323",
-        "A4C H5N",
-        "D4CD3C"
     ]
 
     for postal in postals:
-        new_postal: str = utils.format_postal(postal)
+        new_postal: str = utils.format_validate_postal(postal)
 
         if "0" in new_postal:
             assert len(new_postal) == 5
 
         assert postal in new_postal
+
+def test_is_canada_postal():
+    postals: list[str] = [
+        "A1A 3D3",
+        "A1A3D3",
+    ]
+
+    for postal in postals:
+        assert utils.is_canada_postal(postal)
 
 def mk_files(tmp_path: Path) -> list[Path]:
     '''Creates folders in a given path. The list of Paths used to create the files
