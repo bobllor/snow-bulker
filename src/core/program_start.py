@@ -58,7 +58,7 @@ class ProgramStarter:
         if bulk_res.err:
             self.logger.info(bulk_res.msg)
         if len(bulk_res.content) == 0:
-            self.logger.info("No files were found, unable to continue to automate")
+            self.logger.info("No files were found")
 
             return
 
