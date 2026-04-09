@@ -4,6 +4,7 @@ from src.core.yaml.config_yaml.config_yaml_loader import ConfigYamlLoader
 from src.core.yaml.config_yaml.types import ProfileUrl, Config
 from src.support.types import Result
 from typing import Iterable, Any
+import re
 
 def get_config(root: Path, file: Path | str, yaml_extensions: list[str], config_loader: ConfigYamlLoader) -> Config:
     '''Reads the config YAML and returns a Config. If the file does not exist,
@@ -318,24 +319,19 @@ def format_validate_postal(postal: str) -> str:
 
     return "".join(new_postal)
 
+# defined once so its not recompiled every loop
+_PATTERN: str = r'^([A-Z][0-9][A-Z])\s?([0-9][A-Z][0-9])$'
+_REGEX_CA: re.Pattern = re.compile(_PATTERN)
 def is_canada_postal(postal: str) -> bool:
     '''Checks if the postal is Canada based. If the postal is valid, then it will
     return True, otherwise it will return False.
 
     Valid postals: `A1A1A1`, `A1A 1A1`
     '''
-    letter_count: int = 0
-    number_count: int = 0
-    for c in postal:
-        if c.isalpha():
-            letter_count += 1
-        if c.isnumeric():
-            number_count += 1
-
-    if len(postal) not in [6, 7] or letter_count != 3 or number_count != 3:
-        return False
+    if _REGEX_CA.match(postal) is not None:
+        return True
     
-    return True
+    return False
 
 def convert_country_to_full(country: str) -> str:
     '''Checks if the country is abbreviated and returns the full name.
