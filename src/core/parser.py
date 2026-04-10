@@ -297,7 +297,7 @@ class Parser:
 
                 formatted_errors.append(err_str)
 
-            raise ValueError(f"Errors\n------------\n{'\n'.join(formatted_errors)}\n")
+            raise ValueError(f"Errors\n-----\n{'\n'.join(formatted_errors)}\n")
     
         return data
     
