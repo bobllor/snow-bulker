@@ -26,7 +26,12 @@ if __name__ == "__main__":
     config_loader: ConfigYamlLoader = ConfigYamlLoader()
     config: Config = utils.get_config(project_root, CONFIG_FILE, yaml_extensions, config_loader)
 
-    logger: Log = Log(log_level=config.settings.log_level)
+    logger: Log = Log(
+        log_path=config.settings.log_folder,
+        handler_levels={
+            "stream_level": config.settings.stream_log_level
+        },
+    )
 
     data_loader: DataYamlLoader = DataYamlLoader(logger=logger)
     html_loader: HTMLYamlLoader = HTMLYamlLoader(logger=logger)
@@ -88,7 +93,12 @@ if __name__ == "__main__":
                     continue
                 
                 if hot_config.settings.log_level != config.settings.log_level:
-                    logger = Log(log_level=hot_config.settings.log_level)
+                    logger = Log(
+                        log_path=config.settings.log_folder,
+                        handler_levels={
+                            "stream_level": config.settings.stream_log_level
+                        },
+                    )
 
                 logger.debug(f"Config program settings: {hot_config.settings}")
                 bulker: Bulker = Bulker(
