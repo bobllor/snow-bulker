@@ -34,7 +34,10 @@ auth_info:
       button_element: "#signin-selector" # must be in quotations due to this being an ID selector
 settings:
   headless: false
-  log_level: "info"
+  stream_log_level: "info"
+  data_folder: "/path/to/data/folder"
+  cart_delay_time: 5
+  timeout: 30
 profile_url: 
   returns: "profile-url.com" 
   custom: "profile-url.com" 
@@ -82,11 +85,12 @@ Makes the WebDriver headless, in other words the browser is ran in the backgroun
 > The program will likely fail to close the browser and be left open, consuming resources despite being unused. 
 > It is *recommended to leave this as `false`* since it can manually be closed in case of failure.
 
-#### `log_level`
+#### `stream_log_level`
 
 Default: `info`
 
 The level for the log which will *display on the terminal*. By default, it is `info`.
+This does not effect the logging to file output.
 
 This field has *fixed values*:
 - `debug`
@@ -94,6 +98,25 @@ This field has *fixed values*:
 - `error`
 - `warning`
 - `critical`
+
+#### `timeout`
+
+Default: `30`
+
+Timeout is the length of time for a page load before a timeout exception occurs. This is
+only used during the initial load of each form submission, before it changes back to
+a 7 second timer for each field.
+
+#### `cart_delay_time`
+
+Default: `3`
+
+The wait time after adding the order to the cart. It is recommended this be kept at a lower time
+in order to read the notifications, as that occurs afterwards and disappears in a short amount
+of time.
+
+The longer
+
 
 ### Authentication Information
 
