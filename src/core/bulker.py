@@ -67,7 +67,7 @@ class Bulker:
 
         # paths below cannot be changed, these will always be in the project root.
         # logs folder
-        self._log_path: Path = self.project_path / "output" / "logs"
+        self._log_path: Path = self.logger.log_file.parent
         # email cache folder
         self._cache_path: Path = self.project_path / "output" / "cache"
 
@@ -85,7 +85,7 @@ class Bulker:
     profile_urls: ProfileUrl,
     *, 
     timeout: float | int = 30,
-    wait_time: float | int = 3,
+    cart_delay: float | int = 3,
     driver: Driver = None,
     refresh: bool = True):
         '''Starts the bulking process.
@@ -103,10 +103,8 @@ class Bulker:
             The time in seconds that is used for Driver wait time before causing a timeout exception.
             By default this is 30 seconds.
 
-        wait_time: float | int
-            The waiting time in seconds after a successful order submission before a page refresh.
-            By default it is 3 second. It is recommended to be over a minimum of 1.5 seconds due
-            to the refresh canceling out the order submission if it does not process in time.
+        cart_delay: float | int
+            The waiting time in seconds after adding to cart.
         
         driver: Driver
             The Driver object for web automation via Selenium. By default it is None and
@@ -147,7 +145,7 @@ class Bulker:
                     cache_file_path=data.cache_path,
                     url=url, 
                     refresh=refresh, 
-                    wait_time=wait_time,
+                    cart_delay=cart_delay,
                     default_timeout=timeout,
                     section=data.section,
                 )
@@ -163,7 +161,7 @@ class Bulker:
                     cache_file_path=data.cache_path,
                     url=url,
                     refresh=refresh,
-                    wait_time=wait_time,
+                    cart_delay=cart_delay,
                     default_timeout=timeout,
                     section=data.section,
                 )
@@ -178,7 +176,7 @@ class Bulker:
         cache_file_path: Path,
         url: str,
         refresh: bool,
-        wait_time: int,
+        cart_delay: int | float,
         default_timeout: int,
         section: str = "",
         ) -> None:
@@ -210,10 +208,11 @@ class Bulker:
             refresh: bool
                 Used to refresh the page.
             
-            wait_time: int
-                The time to wait before refreshing. This is required due to the order not
-                processing in time before the refresh. It is applied after clicking the
-                add to cart button.
+            cart_delay: int
+                The timeout after adding to cart. This is recommended to be under 5 amount due to the
+                notification disappearing in a short amount of time after adding to cart.
+                If the notification does not disappear, then the amount of time is dependent on when
+                API processing speeds.
 
             default_timeout: int
                 The timeout for the page load. This is used for resetting the timeout back on each page load
@@ -283,7 +282,7 @@ class Bulker:
                 driver.go_to(url)
                 continue
             
-            add_res: Result = processor.add_to_cart(3)
+            add_res: Result = processor.add_to_cart(cart_delay)
 
             if not add_res.err:
                 self.logger.info(f"{index}: User {user_name} created")
@@ -297,8 +296,11 @@ class Bulker:
         
         failed_len: int = len(self.failed_users)
         if failed_len > 0:
-            self.logger.warning(f"Failed {failed_len}/{data_len} users for section {section}.")
-            self.logger.warning("\n".join(self.failed_users))
+            self.logger.warning(
+                f"Failed {failed_len}/{data_len} users for section {section}" + \
+                "\nUsers\n-----\n" + \
+                "\n".join(self.failed_users)
+            )
     
     def run_return(self,
         driver: Driver,
@@ -310,7 +312,7 @@ class Bulker:
         cache_file_path: Path,
         url: str,
         refresh: bool,
-        wait_time: int,
+        cart_delay: int | float,
         default_timeout: int,
         section: str = "",
         ) -> None:
@@ -342,11 +344,12 @@ class Bulker:
         
         refresh: bool
             Used to refresh the page.
-        
-        wait_time: int
-            The time to wait before refreshing. This is required due to the order not
-            processing in time before the refresh. It is applied after clicking the
-            add to cart button.
+
+        cart_delay: int
+            The timeout after adding to cart. This is recommended to be under 5 amount due to the
+            notification disappearing in a short amount of time after adding to cart.
+            If the notification does not disappear, then the amount of time is dependent on when
+            API processing speeds.
 
         default_timeout: int
             The timeout for the page load. This is used for resetting the timeout back on each page load
@@ -406,7 +409,7 @@ class Bulker:
                 driver.go_to(url)
                 continue 
             
-            add_res: Result = processor.add_to_cart(wait_time)
+            add_res: Result = processor.add_to_cart(cart_delay)
 
             if not add_res.err:
                 self.logger.info(f"{index}: User {user_name} created")
@@ -420,8 +423,11 @@ class Bulker:
 
         failed_len: int = len(self.failed_users)
         if failed_len > 0:
-            self.logger.warning(f"Failed {failed_len}/{data_len} users for section {section}.")
-            self.logger.warning("\n".join(self.failed_users))
+            self.logger.warning(
+                f"Failed {failed_len}/{data_len} users for section {section}" + \
+                "\nUsers\n-----\n" + \
+                "\n".join(self.failed_users)
+            )
 
     def _get_users_to_process(self, data: list[UserInfo], email_cache: set[str]) -> list[int]:
         '''Parses the user data and looks for already used emails in the email cache, it will
