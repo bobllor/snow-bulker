@@ -90,7 +90,7 @@ class ProgramStarter:
             config.profile_url, 
             driver=driver,
             timeout=config.settings.timeout,
-            wait_time=config.settings.refresh_timer
+            cart_delay=config.settings.cart_delay_time,
         )
 
     def start_login(self, login: Login, auth_info: AuthInfo) -> Result:
