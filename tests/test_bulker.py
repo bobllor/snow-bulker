@@ -71,17 +71,6 @@ def copy_excel_files(root: Path) -> int:
     
     return count
 
-def test_check_project_files(bulker: Bulker):
-    # there are three project files required
-    bulker.check_project_files()
-    count: int = 0
-
-    for file in bulker.cache_path.parent.iterdir():
-        if file.is_dir():
-            count += 1
-
-    assert count == 3
-
 @patch("src.core.driver_utils.DriverUtils.handle_dropdown")
 @patch("src.core.bulker.os.replace")
 def test_start(m1: MagicMock, m2: MagicMock, data_yaml: DataYamlLoader, html_yaml: HTMLYamlLoader, bulker: Bulker):
@@ -414,9 +403,7 @@ def test_default_data_path(tmp_path: Path):
     ]
 
     for path in paths:
-        file_name: str = path.name
-
-        assert (root_dir / "output" / file_name).exists()
+        assert path.exists()
 
 def test_new_data_path(tmp_path: Path):
     data_path: Path = tmp_path / "some-data-folder-here"

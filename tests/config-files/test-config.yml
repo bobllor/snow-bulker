@@ -17,8 +17,8 @@ auth_info:
       button_element: "#button"
 settings:
   headless: false
-  log_level: "info"
-  refresh_timer: 6.5
+  stream_log_level: "info"
+  cart_delay_time: 6.5
   timeout: 30
   data_folder: "C:\\Some\\Path\\Here\\DoesNot\\Exist"
 profile_url:

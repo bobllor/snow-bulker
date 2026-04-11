@@ -78,12 +78,12 @@ def test_wrong_id_literal(config_yaml: ConfigYamlLoader):
 def test_wrong_log_literal(config_yaml: ConfigYamlLoader):
     raw: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG, lower=True)
 
-    raw["settings"]["log_level"] = True
+    raw["settings"]["stream_log_level"] = True
 
     res: Result[Config] = config_yaml.validate(raw)
     assert not res.err
 
-    assert res.content.settings.log_level in get_args(LogLevel)
+    assert res.content.settings.stream_log_level in get_args(LogLevel)
 
 def test_config_data_folder(config_yaml: ConfigYamlLoader):
     raw: dict[str, Any] = config_yaml.read(vars.BASE_CONFIG, lower=True)
@@ -103,4 +103,4 @@ def test_config_timers(config_yaml: ConfigYamlLoader):
     base_timeout: int = 30
 
     assert res.content.settings.timeout == base_timeout
-    assert res.content.settings.refresh_timer == base_refresh
+    assert res.content.settings.cart_delay_time == base_refresh
