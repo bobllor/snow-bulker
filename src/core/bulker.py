@@ -56,9 +56,9 @@ class Bulker:
 
         self.project_path: Path = Path(project_path)
         if data_folder is None:
-            data_folder = self.project_path / "output" / "data"
+            data_folder = self.project_path / "data"
 
-        self.logger: Log = logger or Log() 
+        self.logger: Log = logger or Log(log_path=project_root_path / "logs") 
 
         self.parser: Parser = parser or Parser(logger=self.logger)
 
