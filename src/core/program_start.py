@@ -31,7 +31,6 @@ class ProgramStarter:
     config: Config, 
     root_data: RootData, 
     html_fields: HTMLFields, 
-    *, 
     headless: bool = False):
         '''Starting point for the program.
 
@@ -59,6 +58,8 @@ class ProgramStarter:
             self.logger.info(bulk_res.msg)
         if len(bulk_res.content) == 0:
             self.logger.info("No files were found")
+            # ensures errors prevent other threads from starting
+            bulker._event_flag.set()
 
             return
 
@@ -72,6 +73,7 @@ class ProgramStarter:
             driver.go_to(config.auth_info.main_url)
         except InvalidArgumentException:
             self.logger.error(f"Invalid URL '{config.auth_info.main_url}' detected")
+            bulker._event_flag.set()
             driver.quit()
 
             return
@@ -79,6 +81,9 @@ class ProgramStarter:
         login_res: Result = self.start_login(login, config.auth_info)
         if login_res.err:
             self.logger.error(login_res.msg)
+            bulker._event_flag.set()
+
+            driver.quit()
 
             return
 
