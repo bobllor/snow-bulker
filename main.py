@@ -9,6 +9,7 @@ from src.core.runner import Runner
 from logger import Log, LogLevel
 from src.core.program_start import ProgramStarter
 from typing import TypedDict
+from threading import Thread, Event
 import src.support.utils as utils
 
 class SettingsObj(TypedDict):
@@ -67,6 +68,7 @@ if __name__ == "__main__":
     
     while True:
         starter: ProgramStarter = ProgramStarter(project_root, logger=logger)
+        event_flag: Event = Event()
 
         try:
             runner.clear()
@@ -111,15 +113,28 @@ if __name__ == "__main__":
                 bulker: Bulker = Bulker(
                     project_root, 
                     data_folder=hot_config.settings.data_folder, 
-                    logger=logger
+                    logger=logger,
+                    event_flag=event_flag,
                 )
-                starter.start(
-                    bulker, 
-                    yaml_content["config"], 
-                    yaml_content["excel_root"],
-                    yaml_content["html_fields"], 
-                    headless=hot_config.settings.headless,
+
+                exit_thread: Thread = Thread(target=runner.key_listener_exit_thread, args=(event_flag,))
+                main_thread: Thread = Thread(
+                    target=starter.start,
+                    args=(
+                        bulker, 
+                        yaml_content["config"], 
+                        yaml_content["excel_root"],
+                        yaml_content["html_fields"], 
+                        hot_config.settings.headless,
+                    ),
                 )
+
+                main_thread.start()
+                exit_thread.start()
+
+                main_thread.join()
+                # main thread calls Event.set(), this will exit after
+                exit_thread.join()
 
                 # update config to the new loaded hot_config
                 config = hot_config
