@@ -10,6 +10,7 @@ from src.core.yaml.data_yaml.types import RootData, DataYaml, AccountType
 from src.core.yaml.html_yaml.types import HTMLFields
 from src.core.yaml.config_yaml.types import ProfileUrl
 from typing import Any, Callable, TypedDict
+from threading import Event
 import pandas as pd
 import src.support.utils as utils
 import tempfile as tf
@@ -28,7 +29,8 @@ class Bulker:
             *, 
             data_folder: Path | str = None,
             parser: Parser = None,
-            logger: Log = None):
+            logger: Log = None,
+            event_flag: Event = None):
         '''Create a new Bulker.
 
         Parameters
@@ -48,6 +50,9 @@ class Bulker:
 
             logger: Log
                 The Log object. By default it is None and will output to stdout.
+            
+            event_flag: Event
+                The threading Event flag. By default it is None.
         '''
         # only used if project_path is None
         project_root_path: Path = Path(__file__).parent.parent.parent
@@ -78,6 +83,8 @@ class Bulker:
         self._data_children_paths: list[Path] = []
 
         self._failed_users: list[str] = []
+
+        self._event_flag: Event = event_flag or Event()
 
     def start(self, 
     bulk_data: list[BulkData], 
@@ -119,6 +126,10 @@ class Bulker:
 
         for data in bulk_data:
             driver.set_wait_timer(timeout)
+            if self._check_event():
+                self.logger.info(f"Terminate process signal detected, exiting")
+                return
+
             d_yaml: DataYaml = data.config
             if d_yaml.ignore:
                 self.logger.info(f"Skipped section {data.section} (ignore is {d_yaml.ignore})")
@@ -165,6 +176,8 @@ class Bulker:
                     default_timeout=timeout,
                     section=data.section,
                 )
+            
+        self._update_event()
     
     def run_excel(self, 
         driver: Driver, 
@@ -241,6 +254,9 @@ class Bulker:
         self.logger.info(f"Processing orders for {users_to_process_len} user(s)")
 
         for count, i in enumerate(users_to_process):
+            if self._check_event():
+                self.logger.info(f"Terminate process signal detected, exiting")
+                return
             curr_user: UserData = user_data[i]
             curr_company: CompanyData = company_data[i]
             curr_address: AddressData = address_data[i]
@@ -376,6 +392,9 @@ class Bulker:
         self.logger.info(f"Processing orders for {users_to_process_len} user(s)")
 
         for count, i in enumerate(users_to_process):
+            if self._check_event():
+                self.logger.info(f"Terminate process signal detected, exiting")
+                return
             obj: ReturnColumns = return_data[i]
             return_processes: list[ProcessObject] = self.get_return_processes(processor, obj, account_manager_email)
 
@@ -813,6 +832,17 @@ class Bulker:
         result.err = failed == total_sections
 
         return result
+
+    def _update_event(self):
+        '''Updates the event to True. If it already is True, then this does nothing.''' 
+        if not self._event_flag.is_set():
+            self._event_flag.set()
+
+        self.logger.info(f"Event flag update triggered: {self._event_flag.is_set()}")
+
+    def _check_event(self) -> bool:
+        '''Checks the event flag's status and return its status.'''
+        return self._event_flag.is_set()
 
     @property
     def failed_users(self) -> list[str]:
