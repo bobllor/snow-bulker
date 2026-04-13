@@ -7,3 +7,4 @@ ruff==0.15.0
 python-dotenv==1.2.1
 pydantic==2.12.5
 pydantic_core==2.41.5
+pynput==1.8.1
