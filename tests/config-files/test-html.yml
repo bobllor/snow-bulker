@@ -98,5 +98,6 @@ return_fields:
   additional_details: "#sample-attribute-here"
 checkout_fields:
   cart_dropdown: "#sample-attribute-here"
+  notification: "#sample-attribute-here"
   add_to_cart_button: "#sample-attribute-here"
   add_cart_selector: "id"

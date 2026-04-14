@@ -11,9 +11,7 @@ from typing import TypedDict, Literal, TextIO, Any
 from pathlib import Path
 import sys
 
-# this value will be the same as soon as the server is launched.
-# this keeps all logs in one day on the same day.
-DEFAULT_FILENAME: datetime = datetime.now().strftime("bulker-%Y-%m-%d.log")
+DATE_STRING: str = datetime.now().strftime("%Y-%m-%d")
 DEFAULT_DATEFMT: Literal["%Y-%m-%d %H:%M:%S"] = "%Y-%m-%d %H:%M:%S"
 
 LogLevel = Literal["debug", "info", "error", "warning", "critical"]
@@ -32,6 +30,7 @@ class Log(Logger):
     def __init__(self, 
     name: str = __name__,
     *, 
+    file_name: str = "",
     log_path: Path | str = None,
     log_level: LogLevel = "debug",
     handler_levels: HandlerLevelOptions = {},
@@ -42,9 +41,14 @@ class Log(Logger):
         
         Parameters
         ----------
-            name: str default __name__
+            name: str
                 The name of the logger. By default, it uses the __name__ variable, or
                 in other words __main__.
+            
+            file_name: str
+                The log file name. This is attached to a date and the format will follow
+                `YYYY-MM-DD.<file_name>.log`. By default it is an empty string. If `log_path`
+                is `None`, then this will do nothing.
             
             log_path: Path | str, default None
                 The path to the log directory. By default it is None, meaning it will not write a log file.
@@ -68,9 +72,9 @@ class Log(Logger):
         '''
         super().__init__(name)
 
-        stream_handler: StreamHandler = StreamHandler(stream)
+        self._stream_handler: StreamHandler = StreamHandler(stream)
         # will default to stdout if None
-        file_handler: FileHandler = None
+        self._file_handler: FileHandler = None
 
         self.formatter: Formatter = Formatter(fmt=logfmt, datefmt=datefmt)
 
@@ -84,7 +88,7 @@ class Log(Logger):
         }
 
         # creates the log path
-        self._log_file: Path = None
+        self._log_file: Path = log_path
         if log_path is not None:
             new_log_path: Path = Path("")
             if isinstance(log_path, str):
@@ -95,20 +99,27 @@ class Log(Logger):
             if not new_log_path.exists():
                 new_log_path.mkdir(parents=True, exist_ok=True)
 
-            self._log_file = new_log_path / DEFAULT_FILENAME
+            file_name = file_name.strip()
+            if file_name != "":
+                file_name = "." + file_name
+            self._log_file = new_log_path / f"{DATE_STRING}{file_name}.log"
+            self._file_handler = FileHandler(self._log_file)
 
-            file_handler = FileHandler(self._log_file)
-
-        hdlrs: list[Handler] = [stream_handler]
+        hdlrs: list[Handler] = [self._stream_handler]
         hdlr_levels: list[int] = [
             self.log_levels_obj.get(
                 handler_levels.get("stream_level", DEBUG), DEBUG
             )
         ]
 
-        if file_handler is not None:
-            hdlrs.append(file_handler)
-            hdlr_levels.append(self.log_levels_obj.get(handler_levels.get("file_level", DEBUG)))
+        if self._file_handler is not None:
+            hdlrs.append(self._file_handler)
+            hdlr_levels.append(
+                self.log_levels_obj.get(
+                    handler_levels.get("file_level", DEBUG), 
+                    DEBUG
+                )
+            )
         
         self._set_handlers(hdlrs, hdlr_levels)
 
@@ -124,6 +135,11 @@ class Log(Logger):
     def set_logger(self) -> None:
         '''Sets the Log for the logger class for module-level use.'''
         setLoggerClass(Log) 
+    
+    def set_stream_level(self, level: LogLevel) -> None:
+        '''Sets the log level of the stream handler.'''
+        level = level.lower()
+        self._stream_handler.setLevel(self.log_levels_obj[level])
     
     def _set_handlers(self, handlers: list[Handler], levels: list[LogLevel]) -> None:
         '''Sets the handlers and their logging level.'''

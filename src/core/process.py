@@ -221,8 +221,8 @@ class ProcessFields:
         res.msg = self.get_res_msg("Desired Software")
 
         fields: AddonFields = self.html_fields.addon_fields
-        self.logger.debug(f"Desired software: {desired_software}")
         if desired_software != "":
+            self.logger.debug(f"Desired software: {desired_software}")
             res.content = self.get_res_content("software not listed", fields.software_not_listed)
             not_listed_element: WebElement = self.driver.find_element("css selector", fields.software_not_listed)
             not_listed_element.click()
@@ -396,7 +396,13 @@ class ProcessFields:
         res.content = self.get_res_content("sub vendor", fields.sub_vendor)
         self.utils.handle_dropdown(value=fields.sub_vendor, key="No", send_enter=True, send_down=True, wait_time=.8)
         res.content = self.get_res_content("account_manager", fields.account_manager)
-        self.utils.handle_dropdown(value=fields.account_manager, key=account_manager_email, send_tab=True, wait_time=.8)
+        self.utils.handle_dropdown(
+            value=fields.account_manager, 
+            key=account_manager_email, 
+            send_tab=True, 
+            wait_time=.5,
+            post_wait=1,
+        )
 
         runners: list[tuple[Callable[[Any], Result], tuple[Any]]] = [
             (self.company_fill_dates, (company_data, fields,),),
@@ -768,6 +774,10 @@ class ProcessFields:
         )
     
         self.driver.click(add_button, pause=pause)
+
+        err_res: Result = self.check_error()
+        if err_res.err:
+            return err_res
         
         return res
     
@@ -794,6 +804,41 @@ class ProcessFields:
         return res
     
     @driver_wrapper
+    def check_error(self, res: Result = None) -> Result:
+        '''Checks for the error notification. This notification can occur after adding to cart.
+        
+        The error will be logged if one occurs.
+
+        It will return a Resultt indicating if it failed or not.
+        '''
+        if res is None:
+            res = Result()
+        res.msg = self.get_res_msg("notifications (post add to cart)")
+        res.content = self.get_res_content("notification", self.html_fields.checkout_fields.notification)
+
+        # the notification is fixed on the screen
+        notifcations_ele: WebElement = self.driver.find_element(
+            "css selector", 
+            self.html_fields.checkout_fields.notification,
+        )
+        noti_text: str = notifcations_ele.text
+        noti_text_lower: str = noti_text.lower()
+
+        # the notifications is also used for success, errors need to be checked
+        err_texts: list[str] = ["error", "following fields are incomplete"]
+        is_error: bool = False
+        for err in err_texts:
+            if err in noti_text_lower:
+                is_error = True
+        
+        if is_error:
+            self.logger.warning(f"Failed to add to cart: {noti_text}")
+
+        res.err = is_error
+        
+        return res
+    
+    @driver_wrapper
     def wait_for_page_load(self, locator: Locator, element_value: str, new_timeout: int, _: Result = None) -> None:
         '''A blocking method used to wait for to confirm the page loads.
         It finds a target element value and waits until that target element is selectable,
@@ -802,6 +847,7 @@ class ProcessFields:
         The caller is responsible for resetting the timeout back to its original timeout.
         '''
         # only care if it can be found, nothing is done on this element
+        # the exception is caught by the wrapper
         self.driver.find_element(locator, element_value)
 
         self.driver.set_wait_timer(new_timeout)

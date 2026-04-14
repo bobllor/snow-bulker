@@ -9,6 +9,7 @@ from src.core.runner import Runner
 from logger import Log, LogLevel
 from src.core.program_start import ProgramStarter
 from typing import TypedDict
+from threading import Thread, Event
 import src.support.utils as utils
 
 class SettingsObj(TypedDict):
@@ -17,23 +18,30 @@ class SettingsObj(TypedDict):
 
 if __name__ == "__main__":
     project_root: Path = Path(__file__).parent
+    log_path: Path = project_root / "logs"
+    log_file_name: str = "bulker"
     DATA_FILE: str = "data"
     HTML_FILE: str = "html"
     CONFIG_FILE: str = "config"
+
+    logger: Log = Log(
+        log_path=log_path,
+        file_name=log_file_name,
+    )
 
     yaml_extensions: list[str] = ["yml", "yaml"]
 
     config_loader: ConfigYamlLoader = ConfigYamlLoader()
     config: Config = utils.get_config(project_root, CONFIG_FILE, yaml_extensions, config_loader)
 
-    logger: Log = Log(log_level=config.settings.log_level)
+    logger.set_stream_level(config.settings.stream_log_level)
 
     data_loader: DataYamlLoader = DataYamlLoader(logger=logger)
     html_loader: HTMLYamlLoader = HTMLYamlLoader(logger=logger)
     # reinit from the config
     config_loader = ConfigYamlLoader(logger=logger)
 
-    # config and HTML files are case sensitive, they must be lowered
+    # config and HTML files are case sensitive
     # this is handeled inside ProgramStarter.parse_yaml
     yaml_objs: list[YamlStarter] = [
         {"yaml_loader": data_loader, "data_file": DATA_FILE, "parsed_key": "excel_root"},
@@ -47,22 +55,27 @@ if __name__ == "__main__":
 
     menu_txt: list[str] = [
         "Start",
-        "Quit"
+        "Quit",
     ]
 
-    choices: list[str] = [start_str, quit_str]
+    choices: list[str] = [
+        start_str, 
+        quit_str,
+    ]
     # used to display messages above the menu
     banner: str = ""
     run_count: int = 1
     
     while True:
         starter: ProgramStarter = ProgramStarter(project_root, logger=logger)
+        event_flag: Event = Event()
 
         try:
             runner.clear()
             option: str = runner.menu(menu_txt=menu_txt, choices=choices, banner_txt=banner)
 
             if option == runner.quit_str:
+                runner.clear()
                 exit(0)
             elif option == start_str:
                 runner.clear()
@@ -87,22 +100,41 @@ if __name__ == "__main__":
 
                     continue
                 
-                if hot_config.settings.log_level != config.settings.log_level:
-                    logger = Log(log_level=hot_config.settings.log_level)
+                if hot_config.settings.stream_log_level != config.settings.stream_log_level:
+                    logger = Log(
+                        log_path=log_path,
+                        handler_levels={
+                            "stream_level": config.settings.stream_log_level,
+                        },
+                        file_name=log_file_name,
+                    )
 
                 logger.debug(f"Config program settings: {hot_config.settings}")
                 bulker: Bulker = Bulker(
                     project_root, 
                     data_folder=hot_config.settings.data_folder, 
-                    logger=logger
+                    logger=logger,
+                    event_flag=event_flag,
                 )
-                starter.start(
-                    bulker, 
-                    yaml_content["config"], 
-                    yaml_content["excel_root"],
-                    yaml_content["html_fields"], 
-                    headless=hot_config.settings.headless,
+
+                exit_thread: Thread = Thread(target=runner.key_listener_exit_thread, args=(event_flag,))
+                main_thread: Thread = Thread(
+                    target=starter.start,
+                    args=(
+                        bulker, 
+                        yaml_content["config"], 
+                        yaml_content["excel_root"],
+                        yaml_content["html_fields"], 
+                        hot_config.settings.headless,
+                    ),
                 )
+
+                main_thread.start()
+                exit_thread.start()
+
+                main_thread.join()
+                # main thread calls Event.set(), this will exit after
+                exit_thread.join()
 
                 # update config to the new loaded hot_config
                 config = hot_config
@@ -120,7 +152,11 @@ if __name__ == "__main__":
                     banner = ""
         except Exception as e:
             banner = "An unknown error has occurred, it has been logged"
-            logger.critical(f"Unknown exception occurred: {e}")
+            import sys, os
+            _, _, e_tb = sys.exc_info()
+            line_level: int = e_tb.tb_lineno
+
+            logger.critical(f"Unknown exception occurred ({line_level}): {e}")
 
             runner.enter_to_continue()
         except KeyboardInterrupt:

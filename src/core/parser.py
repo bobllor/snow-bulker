@@ -1,5 +1,5 @@
 from src.support.types import UserData, AddressData, CompanyData, ReturnColumns
-from typing import Any, Callable
+from typing import Any, Callable, TypedDict
 from logger import Log
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -225,11 +225,22 @@ class Parser:
         
         It returns a list of AddressData dictionaries for each row in order.
 
-        A ValueError will be raised if the state is invalid, meaning it does not exist
-        in both the United States and Canada.
+        A ValueError exception will be raised if the following conditions are met:
+            - The given state does not exist in either Canada or United States
+            - 
         '''
         data: list[AddressData] = []
         address_keys: AddressData = {key: key for key in AddressData.__annotations__}
+
+
+        class RowError(TypedDict):
+            column: str
+            value: Any
+            row: int
+        errors: list[RowError] = []
+        # 1 -> is the headers of the Excel
+        # 2 -> handles 0-index
+        row_padding: int = 2
 
         for i in range(len(df)):
             address_data: AddressData = {}
@@ -237,6 +248,7 @@ class Parser:
 
             for key in address_keys:
                 value: str = row[key]
+                err_d: RowError = {}
 
                 # states have to be handled due to it often being an abberviation from requestors
                 # postal has to be handled due to leading zeroes being dropped from Excel/pandas
@@ -251,19 +263,41 @@ class Parser:
 
                         if state == "":
                             self.logger.error(f"Invalid state/province given: {value}")
-                            raise ValueError(f"Failed to find valid state/province with {value}") 
+                            err_d["row"] = i + row_padding
+                            err_d["column"] = key
+                            err_d["value"] = value
+
+                            errors.append(err_d)
 
                     # final conversion to full state name 
                     value = state
                 elif key == address_keys["postal"]:
-                    # canada orders doesn't get effected by this, their postal is 6 or 7 characters long.
                     # string conversion needed as Excel is often an int
                     value = str(value)
-                    value = utils.format_postal(value)
+                    try:
+                        value = utils.format_validate_postal(value)
+                    except ValueError:
+                        err_d["row"] = i + row_padding
+                        err_d["column"] = key
+                        err_d["value"] = value
+
+                        errors.append(err_d)
+
+                elif key == address_keys["country"]:
+                    value = utils.convert_country_to_full(value)
                     
                 address_data[key] = value
             
             data.append(address_data.copy())
+        
+        if len(errors) != 0:
+            formatted_errors: list[str] = []
+            for err in errors:
+                err_str: str = f"row:{err['row']}|column:{err['column']}|value:{err['value']}"
+
+                formatted_errors.append(err_str)
+
+            raise ValueError(f"Errors\n-----\n{'\n'.join(formatted_errors)}\n")
     
         return data
     

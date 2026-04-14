@@ -2,6 +2,7 @@ from pydantic import BaseModel, BeforeValidator
 from src.librelnium.support.types import Locator
 from logger import LogLevel
 from typing import Annotated
+from pathlib import Path
 import src.core.yaml.utils as utils
 
 
@@ -36,8 +37,8 @@ class AuthInfo(BaseModel):
 class ProgramSettings(BaseModel):
     '''Used to hold the configuration of the program.'''
     headless: Annotated[bool, BeforeValidator(lambda v: utils.return_bool(v, False))] = False
-    log_level: Annotated[LogLevel, BeforeValidator(lambda v: utils.return_literal(v, LogLevel, "info"))] = "info"
-    refresh_timer: int | float = 6.5
+    stream_log_level: Annotated[LogLevel, BeforeValidator(lambda v: utils.return_literal(v, LogLevel, "info"))] = "info"
+    cart_delay_time: int | float = 3
     timeout: int | float = 30
     data_folder: str = None
 

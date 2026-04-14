@@ -144,3 +144,10 @@ def test_add_convert_date(parser: Parser):
 
     for val in data:
         assert str(new_year) in val
+
+def test_country_conversions(parser: Parser):
+    df: pd.DataFrame = parser.read(vars.EXCEL)
+    addr: list[AddressData] = parser.get_address_data(df)
+
+    for ad in addr:
+        assert ad["country"] in "United States" or ad["country"] in "Canada"

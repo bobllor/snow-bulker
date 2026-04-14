@@ -10,6 +10,7 @@ from src.core.yaml.data_yaml.types import RootData, DataYaml, AccountType
 from src.core.yaml.html_yaml.types import HTMLFields
 from src.core.yaml.config_yaml.types import ProfileUrl
 from typing import Any, Callable, TypedDict
+from threading import Event
 import pandas as pd
 import src.support.utils as utils
 import tempfile as tf
@@ -28,7 +29,8 @@ class Bulker:
             *, 
             data_folder: Path | str = None,
             parser: Parser = None,
-            logger: Log = None):
+            logger: Log = None,
+            event_flag: Event = None):
         '''Create a new Bulker.
 
         Parameters
@@ -48,6 +50,9 @@ class Bulker:
 
             logger: Log
                 The Log object. By default it is None and will output to stdout.
+            
+            event_flag: Event
+                The threading Event flag. By default it is None.
         '''
         # only used if project_path is None
         project_root_path: Path = Path(__file__).parent.parent.parent
@@ -56,9 +61,9 @@ class Bulker:
 
         self.project_path: Path = Path(project_path)
         if data_folder is None:
-            data_folder = self.project_path / "output" / "data"
+            data_folder = self.project_path / "data"
 
-        self.logger: Log = logger or Log() 
+        self.logger: Log = logger or Log(log_path=project_root_path / "logs") 
 
         self.parser: Parser = parser or Parser(logger=self.logger)
 
@@ -67,7 +72,7 @@ class Bulker:
 
         # paths below cannot be changed, these will always be in the project root.
         # logs folder
-        self._log_path: Path = self.project_path / "output" / "logs"
+        self._log_path: Path = self.logger.log_file.parent
         # email cache folder
         self._cache_path: Path = self.project_path / "output" / "cache"
 
@@ -79,13 +84,15 @@ class Bulker:
 
         self._failed_users: list[str] = []
 
+        self._event_flag: Event = event_flag or Event()
+
     def start(self, 
     bulk_data: list[BulkData], 
     html_fields: HTMLFields,
     profile_urls: ProfileUrl,
     *, 
     timeout: float | int = 30,
-    wait_time: float | int = 3,
+    cart_delay: float | int = 3,
     driver: Driver = None,
     refresh: bool = True):
         '''Starts the bulking process.
@@ -103,10 +110,8 @@ class Bulker:
             The time in seconds that is used for Driver wait time before causing a timeout exception.
             By default this is 30 seconds.
 
-        wait_time: float | int
-            The waiting time in seconds after a successful order submission before a page refresh.
-            By default it is 3 second. It is recommended to be over a minimum of 1.5 seconds due
-            to the refresh canceling out the order submission if it does not process in time.
+        cart_delay: float | int
+            The waiting time in seconds after adding to cart.
         
         driver: Driver
             The Driver object for web automation via Selenium. By default it is None and
@@ -121,6 +126,10 @@ class Bulker:
 
         for data in bulk_data:
             driver.set_wait_timer(timeout)
+            if self._check_event():
+                self.logger.info(f"Terminate process signal detected, exiting")
+                return
+
             d_yaml: DataYaml = data.config
             if d_yaml.ignore:
                 self.logger.info(f"Skipped section {data.section} (ignore is {d_yaml.ignore})")
@@ -147,7 +156,7 @@ class Bulker:
                     cache_file_path=data.cache_path,
                     url=url, 
                     refresh=refresh, 
-                    wait_time=wait_time,
+                    cart_delay=cart_delay,
                     default_timeout=timeout,
                     section=data.section,
                 )
@@ -163,10 +172,12 @@ class Bulker:
                     cache_file_path=data.cache_path,
                     url=url,
                     refresh=refresh,
-                    wait_time=wait_time,
+                    cart_delay=cart_delay,
                     default_timeout=timeout,
                     section=data.section,
                 )
+            
+        self._update_event()
     
     def run_excel(self, 
         driver: Driver, 
@@ -178,7 +189,7 @@ class Bulker:
         cache_file_path: Path,
         url: str,
         refresh: bool,
-        wait_time: int,
+        cart_delay: int | float,
         default_timeout: int,
         section: str = "",
         ) -> None:
@@ -210,10 +221,11 @@ class Bulker:
             refresh: bool
                 Used to refresh the page.
             
-            wait_time: int
-                The time to wait before refreshing. This is required due to the order not
-                processing in time before the refresh. It is applied after clicking the
-                add to cart button.
+            cart_delay: int
+                The timeout after adding to cart. This is recommended to be under 5 amount due to the
+                notification disappearing in a short amount of time after adding to cart.
+                If the notification does not disappear, then the amount of time is dependent on when
+                API processing speeds.
 
             default_timeout: int
                 The timeout for the page load. This is used for resetting the timeout back on each page load
@@ -233,7 +245,6 @@ class Bulker:
         users_to_process: list[int] = self._get_users_to_process(user_data, email_cache)
         users_to_process_len: int = len(users_to_process)
 
-        self.logger.debug(f"{users_to_process_len}") 
         self.logger.info(f"Found {data_len - users_to_process_len}/{data_len} users in cache")
 
         if users_to_process_len == 0:
@@ -243,6 +254,9 @@ class Bulker:
         self.logger.info(f"Processing orders for {users_to_process_len} user(s)")
 
         for count, i in enumerate(users_to_process):
+            if self._check_event():
+                self.logger.info(f"Terminate process signal detected, exiting")
+                return
             curr_user: UserData = user_data[i]
             curr_company: CompanyData = company_data[i]
             curr_address: AddressData = address_data[i]
@@ -284,22 +298,25 @@ class Bulker:
                 driver.go_to(url)
                 continue
             
-            add_res: Result = processor.add_to_cart(wait_time)
+            add_res: Result = processor.add_to_cart(cart_delay)
 
             if not add_res.err:
                 self.logger.info(f"{index}: User {user_name} created")
                 email_cache = self.add_to_cache(curr_user["email"], email_cache, cache_file_path)
             else:
-                self.logger.info(f"{index}: Failed to add {user_name} to cart, skipping cache")
-                self.logger.error(add_res.msg, add_res.content)
+                self.logger.info(f"{index}: Failed to add {user_name} to cart")
+                self.logger.error(f"{add_res.msg}, {add_res.content}")
 
             if refresh:
                 driver.driver.refresh()
         
         failed_len: int = len(self.failed_users)
         if failed_len > 0:
-            self.logger.warning(f"Failed {failed_len}/{data_len} users for section {section}.")
-            self.logger.warning("\n".join(self.failed_users))
+            self.logger.warning(
+                f"Failed {failed_len}/{data_len} users for section {section}" + \
+                "\nUsers\n-----\n" + \
+                "\n".join(self.failed_users)
+            )
     
     def run_return(self,
         driver: Driver,
@@ -311,7 +328,7 @@ class Bulker:
         cache_file_path: Path,
         url: str,
         refresh: bool,
-        wait_time: int,
+        cart_delay: int | float,
         default_timeout: int,
         section: str = "",
         ) -> None:
@@ -343,11 +360,12 @@ class Bulker:
         
         refresh: bool
             Used to refresh the page.
-        
-        wait_time: int
-            The time to wait before refreshing. This is required due to the order not
-            processing in time before the refresh. It is applied after clicking the
-            add to cart button.
+
+        cart_delay: int
+            The timeout after adding to cart. This is recommended to be under 5 amount due to the
+            notification disappearing in a short amount of time after adding to cart.
+            If the notification does not disappear, then the amount of time is dependent on when
+            API processing speeds.
 
         default_timeout: int
             The timeout for the page load. This is used for resetting the timeout back on each page load
@@ -365,7 +383,6 @@ class Bulker:
         users_to_process: list[int] = self._get_users_to_process(return_data, email_cache)
         users_to_process_len: int = len(users_to_process)
 
-        self.logger.debug(f"{users_to_process_len}") 
         self.logger.info(f"Found {data_len - users_to_process_len}/{data_len} users in cache")
 
         if users_to_process_len == 0:
@@ -375,6 +392,9 @@ class Bulker:
         self.logger.info(f"Processing orders for {users_to_process_len} user(s)")
 
         for count, i in enumerate(users_to_process):
+            if self._check_event():
+                self.logger.info(f"Terminate process signal detected, exiting")
+                return
             obj: ReturnColumns = return_data[i]
             return_processes: list[ProcessObject] = self.get_return_processes(processor, obj, account_manager_email)
 
@@ -408,13 +428,13 @@ class Bulker:
                 driver.go_to(url)
                 continue 
             
-            add_res: Result = processor.add_to_cart(wait_time)
+            add_res: Result = processor.add_to_cart(cart_delay)
 
             if not add_res.err:
                 self.logger.info(f"{index}: User {user_name} created")
                 email_cache = self.add_to_cache(user_email, email_cache, cache_file_path)
             else:
-                self.logger.info(f"{index}: Failed to add {user_name} to cart, skipping cache")
+                self.logger.info(f"{index}: Failed to add {user_name} to cart")
                 self.logger.error(add_res.msg, add_res.content)
 
             if refresh:
@@ -422,8 +442,11 @@ class Bulker:
 
         failed_len: int = len(self.failed_users)
         if failed_len > 0:
-            self.logger.warning(f"Failed {failed_len}/{data_len} users for section {section}.")
-            self.logger.warning("\n".join(self.failed_users))
+            self.logger.warning(
+                f"Failed {failed_len}/{data_len} users for section {section}" + \
+                "\nUsers\n-----\n" + \
+                "\n".join(self.failed_users)
+            )
 
     def _get_users_to_process(self, data: list[UserInfo], email_cache: set[str]) -> list[int]:
         '''Parses the user data and looks for already used emails in the email cache, it will
@@ -664,7 +687,7 @@ class Bulker:
                     "return_data": self.parser.get_return_data(df)
                 }
         except Exception as e:
-            self.logger.error(f"Failed to parse Excel {data_path.name}: {e}")
+            self.logger.error(f"Failed to parse Excel {data_path.name}:\n{e}")
             return None
 
         return data
@@ -809,6 +832,17 @@ class Bulker:
         result.err = failed == total_sections
 
         return result
+
+    def _update_event(self):
+        '''Updates the event to True. If it already is True, then this does nothing.''' 
+        if not self._event_flag.is_set():
+            self._event_flag.set()
+
+        self.logger.info(f"Event flag update triggered: {self._event_flag.is_set()}")
+
+    def _check_event(self) -> bool:
+        '''Checks the event flag's status and return its status.'''
+        return self._event_flag.is_set()
 
     @property
     def failed_users(self) -> list[str]:
