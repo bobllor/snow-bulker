@@ -73,17 +73,45 @@ There are three dictionaries used in the file:
 This dictionary holds the information for the program logic. These values are not required
 and will not cause an error if left empty.
 
+#### `timeout`
+
+Default: `30`
+
+Timeout is the timer used for how long the Driver will wait during a process pause before causing
+a timeout error *when the device URL page* is accessed.
+
+It is primarily to handle long loading pages on the first load of an automated process.
+
+#### `refresh_timer`
+
+Default: `6.5`
+
+Refresh timer is used to wait before the page is refreshed during automation. This is only applied at the
+end of a process, while waiting for the API to process the request to add into the cart.
+
+#### `data_folder`
+
+Default: None
+
+The folder path to where the Excel data files are stored. By default if it is None, it will use the 
+project's root as the folder to check.
+
+This folder is automatically created if it does not exist.
+
 #### `headless`
 
 Default: `false`
 
-Makes the WebDriver headless, in other words the browser is ran in the background when the automation process starts.
+Puts the WebDriver into headless mode, in other words the browser is ran in the background when the automation process starts.
 
 > IMPORTANT
 >
 > If this is `true`, then do not interrupt the program with `Ctrl + C` during the automation process.
 > The program will likely fail to close the browser and be left open, consuming resources despite being unused. 
 > It is *recommended to leave this as `false`* since it can manually be closed in case of failure.
+> 
+> The fragile nature of Selenium and how many fields this automates can cause errors. Additionally, the developers
+> of the ServiceNow instance often is changing the form without informing me, causing more unknown errors.
 
 #### `stream_log_level`
 
