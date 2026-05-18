@@ -1,7 +1,7 @@
 from pydantic import BaseModel, RootModel
 from typing import Literal, Any
 
-type Profile = Literal["dell i5", "dell i7", "dell i7 big", "custom", "return"]
+type Profile = Literal["dell i5", "dell i7", "dell i7 big", "custom", "return", "exchange"]
 type OperatingSystems = Literal["windows 11", "windows 10", "no operating system"]
 type AccountType = Literal["regional", "national"]
 
