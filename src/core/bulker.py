@@ -2,7 +2,7 @@ from logger import Log
 from pathlib import Path
 from src.librelnium.driver import Driver
 from selenium.common.exceptions import InvalidArgumentException
-from src.support.types import AddressData, CompanyData, UserData, ExcelData, Result, ReturnData, BulkData, UserInfo
+from src.support.types import AddressData, CompanyData, UserData, ExcelData, Result, ReturnData, BulkData, UserInfo, BulkProfile
 from src.core.yaml.data_yaml.types import CustomOrder
 from src.core.parser import Parser, ReturnColumns
 from src.core.process import ProcessFields
@@ -144,8 +144,11 @@ class Bulker:
                 self.logger.error(f"Invalid URL '{url}' detected")
                 continue
 
-            if not data.is_return_profile: 
-                self.logger.debug(f"Profile size: {len(data.excel_data['address'])}")
+            # clear users before processing
+            self._failed_users.clear()
+
+            if data.profile == "normal": 
+                self.logger.debug(f"Profile size (normal): {len(data.excel_data['address'])}")
 
                 self.run_excel(
                     driver, 
@@ -160,8 +163,8 @@ class Bulker:
                     default_timeout=timeout,
                     section=data.section,
                 )
-            else:
-                self.logger.debug(f"Profile size: {len(data.excel_data['return_data'])}")
+            elif data.profile == "return":
+                self.logger.debug(f"Profile size (return): {len(data.excel_data['return_data'])}")
 
                 self.run_return(
                     driver,
@@ -176,8 +179,104 @@ class Bulker:
                     default_timeout=timeout,
                     section=data.section,
                 )
+            else:
+                self.logger.debug(f"Profile size (software): {len(data.excel_data["user"])}")
+
+                self.run_software(
+                    driver, 
+                    processor, 
+                    data.excel_data, 
+                    yaml_data=d_yaml, 
+                    email_cache=data.email_cache,
+                    cache_file_path=data.cache_path,
+                    url=url, 
+                    refresh=refresh, 
+                    cart_delay=cart_delay,
+                    default_timeout=timeout,
+                    section=data.section,
+                )
             
         self._update_event()
+    
+    def run_software(self, 
+        driver: Driver, 
+        processor: ProcessFields, 
+        excel_data: ExcelData,
+        *,
+        email_cache: set[str],
+        yaml_data: DataYaml,
+        cache_file_path: Path,
+        url: str,
+        refresh: bool,
+        cart_delay: int | float,
+        default_timeout: int,
+        section: str = "",
+        ) -> None:
+        '''Runs the software Excel process.
+        
+        This shares similarities with the normal Excel process but does not use
+        the address data.
+        '''
+        user_data: list[UserData] = excel_data["user"]
+        company_data: list[CompanyData] = excel_data["company"]
+        data_len: int = len(user_data)
+
+        users_to_process: list[int] = self._get_users_to_process(user_data, email_cache)
+        users_to_process_len: int = len(users_to_process)
+
+        self.logger.info(f"Found {data_len - users_to_process_len}/{data_len} users in cache")
+
+        if users_to_process_len == 0:
+            self.logger.info(f"No orders to process")
+            return
+
+        for count, i in enumerate(users_to_process):
+            if self._check_event():
+                self.logger.info(f"Terminate process signal detected, exiting")
+                return
+
+            index: str = f"User {count + 1}"
+            has_error: bool = False
+
+            company: CompanyData = company_data[i]
+            user: UserData = user_data[i]
+
+            user_name: str = user["full name"]
+            user_email: str = user["email"]
+            if user_email in email_cache:
+                continue
+
+            processor.wait_for_page_load(
+                "css selector", 
+                processor.html_fields.company_fields.account_manager,
+                7
+            ) 
+
+            self.logger.info(f"{index}: Starting user {user_name}")
+            res: Result = processor.start_software_only_order(user, company, yaml_data.account_manager_email)
+            if res.err:
+                has_error = True
+            
+            driver.set_wait_timer(default_timeout)
+            if has_error:
+                self.logger.error(f"{index}: Failed to process order for {user_name}")
+                self._failed_users.append(user_name)
+                driver.go_to(url)
+                continue
+            
+            add_res: Result = processor.add_to_cart(cart_delay)
+
+            if not add_res.err:
+                self.logger.info(f"{index}: User {user_name} created")
+                email_cache = self.add_to_cache(user_email, email_cache, cache_file_path)
+            else:
+                self.logger.info(f"{index}: Failed to add {user_name} to cart")
+                self.logger.error(f"{add_res.msg}, {add_res.content}")
+
+            if refresh:
+                driver.driver.refresh()
+
+        self.log_failed_users(data_len, section)
     
     def run_excel(self, 
         driver: Driver, 
@@ -630,7 +729,7 @@ class Bulker:
 
                 self.logger.info(f"Created folder {name} in {parent}")
 
-    def get_data(self, file: str, *, is_return_profile: bool = False) -> ExcelData | ReturnData | None:
+    def get_data(self, file: str, *, is_return_profile: bool = False, ignore_address: bool = False) -> ExcelData | ReturnData | None:
         '''Gets the data from the excel. This searches the `data` folder recursively.
         It will return a list of dictionaries ExcelData or ReturnData if `is_return_profile` is True. 
 
@@ -645,6 +744,11 @@ class Bulker:
             is_return_profile: bool
                 Indicates if the given file is a return Excel file. This will parse the Excel file 
                 differently and will return `ReturnData` instead. By default this is False.
+            
+            ignore_address: bool
+                Ignores all the columns related to address. If true, Data["address"] of the return value
+                will be an empty array.
+                This must be handled if true. By default it is false.
         '''
         data_path: Path = self._data_path / file
         if not data_path.parent.exists():
@@ -675,8 +779,12 @@ class Bulker:
             if not is_return_profile:
                 df: pd.DataFrame = self.parser.read(data_path, add_years=1)
 
+                address_data: list[AddressData] = []
+                if not ignore_address:
+                    address_data = self.parser.get_address_data(df)
+
                 data: ExcelData = {
-                    "address": self.parser.get_address_data(df),
+                    "address": address_data,
                     "company": self.parser.get_company_data(df),
                     "user": self.parser.get_user_data(df),
                 }
@@ -795,13 +903,21 @@ class Bulker:
         ignored: int = 0
 
         for section, cfg in data.root.items():
+            self.logger.debug(f"Section {section} data: {cfg}")
             if cfg.ignore:
                 self.logger.info(f"Skipped section {section} (ignore is {cfg.ignore})")
                 ignored += 1
                 continue
+                
+            # TODO: temp hardcode, change later for scalability
+            is_software_order: bool = cfg.profile == "exchange"
 
-            is_return_profile: bool = cfg.profile == "return"
-            excel_data: ExcelData | ReturnData | None = self.get_data(cfg.data_file, is_return_profile=is_return_profile)
+            # return profile is a different excel type, but normal/software shares the same excel
+            excel_data: ExcelData | ReturnData | None = self.get_data(
+                cfg.data_file, 
+                is_return_profile=cfg.profile == "return",
+                ignore_address=is_software_order
+            )
             if excel_data is None:
                 self.logger.error(f"Failed to find Excel file {cfg.data_file}") 
                 failed += 1
@@ -810,13 +926,19 @@ class Bulker:
             email_cache, cache_path = self.get_cache(cfg.email_cache)
             self.logger.debug(f"Cache file: {cache_path.name} | Cache size: {len(email_cache)}")
 
+            profile: BulkProfile = "normal"
+            if cfg.profile == "return":
+                profile = "return" 
+            elif cfg.profile == "exchange":
+                profile = "software"
+
             bulk_data: BulkData = BulkData(
                 excel_data=excel_data,
                 email_cache=email_cache,
                 cache_path=cache_path,
                 section=section,
                 config=cfg,
-                is_return_profile=is_return_profile
+                profile=profile
             )
 
             out_bulk.append(bulk_data)
@@ -832,6 +954,17 @@ class Bulker:
         result.err = failed == total_sections
 
         return result
+
+    def log_failed_users(self, data_length: int, section: str) -> None:
+        '''Logs the failed users to the WARNING level, if any.'''
+        failed_len: int = len(self.failed_users)
+        if failed_len > 0:
+            self.logger.warning(
+                f"Failed {failed_len}/{data_length} users for section {section}" + \
+                "\nUsers\n-----\n" + \
+                "\n".join(self.failed_users)
+            )
+    
 
     def _update_event(self):
         '''Updates the event to True. If it already is True, then this does nothing.''' 
