@@ -102,7 +102,10 @@ class Parser:
 
         # convert all data to strings
         for col in df.columns:
-            df[col] = self.apply(df, col, convert_raise_string)
+            try:
+                df[col] = self.apply(df, col, convert_raise_string)
+            except ValueError as e:
+                raise ValueError(f"Error parsing Excel column '{col}': {e}")
 
         return df
     
