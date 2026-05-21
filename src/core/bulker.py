@@ -16,6 +16,8 @@ import src.support.utils as utils
 import tempfile as tf
 import os
 
+IGNORE_CACHE_STRING: str = "ignore"
+
 class ProcessObject(TypedDict):
     '''Object for the processor data for automation.'''
     func: Callable[[Any], Any]
@@ -800,18 +802,25 @@ class Bulker:
 
         return data
 
-    def get_cache(self, file: str = "") -> tuple[set[str], Path]:
+    def get_cache(self, file: str = "default") -> tuple[set[str], Path | None]:
         '''Retrieves the email cache from the cache folder as a set. If the file does not exist,
         then it will create the file. 
         
         A tuple of the emails in a hash set and the Path to the cache file will be returned.
+
+        If the given file is an *empty string*, then it will return an empty set and None for
+        the email cache and the cache Path.
         
         Parameter
         ---------
             file: str
-                The file name of the cache file. By default it is an empty string, which if
-                given the file will default to `default_cache.txt`.
+                The file name of the cache file. By default it is set as `default` which
+                will default the file name to `default_cache.txt`.
         '''
+        if file == "":
+            self.logger.info("Given cache path is empty, skipping cache")
+            return set(), None
+
         cache_path: Path = self._cache_path / file
         if not cache_path.parent.exists(): 
             cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -823,8 +832,8 @@ class Bulker:
             self._cache_children_paths = cache_children
             self.logger.debug(f"Cache children paths size: {len(self._cache_children_paths)}")
 
-        if file == "": 
-            self.logger.warning(f"No email cache found, defaulting to '{self._default_cache_file}'")
+        if file == "default": 
+            self.logger.info(f"No email cache found, defaulting to '{self._default_cache_file}'")
             cache_path = self._cache_path / self._default_cache_file
         elif not cache_path.exists():
             # search the cache children paths for the file, the file name must be contained in the paths
@@ -855,9 +864,13 @@ class Bulker:
         
         return set(data), cache_path
     
-    def add_to_cache(self, email: str, cache: set[str], cache_path: Path) -> set[str]:
+    def add_to_cache(self, email: str, cache: set[str], cache_path: Path | None) -> set[str]:
         '''Updates the cache with a new email entry and writes to the cache file. It returns
         a new copy of the cache.
+
+        If `cache_path` is None, then this will return the given cache set without writing
+        to the cache. This is only applicable if the data config has the cache set to
+        "ignore".
 
         Parameters
         ----------
@@ -870,6 +883,9 @@ class Bulker:
             cache_path: Path
                 The Path to the cache file.
         '''
+        if not cache_path:
+            return cache
+
         cache_copy: set[str] = cache.copy()
         cache_copy.add(email)
 
@@ -923,8 +939,16 @@ class Bulker:
                 failed += 1
                 continue
             
+            email_cache: str = cfg.email_cache
+            # changes the cache to an empty string if ignore is true,
+            # this will cause the cache_path to be None and skip adding to cache
+            if cfg.email_cache.lower().strip() == IGNORE_CACHE_STRING:
+                email_cache = ""
             email_cache, cache_path = self.get_cache(cfg.email_cache)
-            self.logger.debug(f"Cache file: {cache_path.name} | Cache size: {len(email_cache)}")
+            cache_name: str | None = None
+            if cache_path is not None:
+                cache_name = cache_path.name
+            self.logger.debug(f"Cache file: {cache_name} | Cache size: {len(email_cache)}")
 
             profile: BulkProfile = "normal"
             if cfg.profile == "return":
