@@ -44,6 +44,7 @@ profile_url:
   dell_i5: "profile-url.com" 
   dell_i7: "profile-url.com" 
   dell_i7_big: "profile-url.com"
+  exchange: "profile-url.com"
 ```
 
 ## Errors
@@ -303,5 +304,6 @@ it will access the URL given to these values below:
 - `dell_i5`
 - `dell_i7`
 - `dell_i7_big`
+- `exchange`
 
 All values will default to an empty string, these are *required*.

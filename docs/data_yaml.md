@@ -157,8 +157,14 @@ It prevents duplicate users from being entered more than once in case the source
 
 If no value is given, then it will default to the cache file name `default_cache.txt`.
 
+If the value `ignore` is used as the value, it will *not attempt to write to the cache* and will always
+process an order without checking if the user has already been processed.
+
 ```yaml
 email_cache: "company-1-cache.txt"
+
+# will not write to cache
+email_cache: ignore
 ```
 
 ### `hardware`
@@ -228,6 +234,7 @@ Values:
   - `Dell i7 Big`
   - `Custom`
   - `Return`
+  - `Exchange`
 
 The option `Custom` will require to have the field [custom_order](#custom_order) with required attributes filled out.
 The program will fail to run if this requirement is not met.
@@ -235,6 +242,9 @@ The program will fail to run if this requirement is not met.
 
 The option `Return` will tell the program to parse the given Excel file *as a Return Excel file*. This must follow
 its specific formatting which are different from the standard Excel file. To read more, [click here](./excel_file.md).
+
+The option `Exchange` will trigger a new workflow with handling requests that only are used for software. This is
+one of many that will potentially be added.
 
 ### `software`
 
