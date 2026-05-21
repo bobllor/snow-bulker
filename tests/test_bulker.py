@@ -390,6 +390,25 @@ def test_fail_users_start(_, data_yaml: DataYamlLoader, bulker: Bulker):
 
     bulker.start(bulk_res.content, mock_html, mock_profile_urls, driver=mock_driver)
 
+def test_ignore_cache(data_yaml: DataYamlLoader, bulker: Bulker):
+    d: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG, lower=True)
+    for v in d.values():
+        v["email_cache"] = ""
+
+    res: Result[RootData] = data_yaml.validate(d)
+
+    assert not res.err
+
+    lbdr: Result[list[BulkData]] = bulker.get_bulk_data(res.content)
+    lbd: list[BulkData] = lbdr.content
+
+    ex_cache: set[str] = ["1"]
+    for bd in lbd:
+        assert bd.cache_path is None
+
+        c = bulker.add_to_cache("email", ex_cache, bd.cache_path)
+        assert c == ex_cache
+
 def test_default_data_path(tmp_path: Path):
     bulker: Bulker = Bulker(tmp_path)
     bulker.check_project_files()
