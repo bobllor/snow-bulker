@@ -570,6 +570,9 @@ class ProcessFields:
         '''Starts the return fields. This is only used if the `profile` field is
         `return`. It is going to be assumed that all items assigned to the user is returned.
 
+        It is expected the user to exist due to this being a return request, meaning the user already
+        has assets assigned in the system.
+
         The address fields are handled within the method.
 
         Parameters
@@ -590,9 +593,10 @@ class ProcessFields:
 
         fields: ReturnFields = self.html_fields.return_fields
         self.logger.debug(f"Return data: {return_data}")
+        return_value: str = "return"
 
         res.content = self.get_res_content("request type", fields.request_type)
-        self.utils.handle_dropdown(fields.request_type, key="return", send_enter=True)
+        self.utils.handle_dropdown(fields.request_type, key=return_value, send_enter=True)
 
         res.content = self.get_res_content("account manager", fields.account_manager)
         self.utils.handle_dropdown(fields.account_manager, key=account_manager_email, send_enter=True)
