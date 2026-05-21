@@ -818,7 +818,7 @@ class Bulker:
                 The file name of the cache file. By default it is set as `default_cache.txt`.
         '''
         if file == "":
-            self.logger.info("Given cache path is empty, skipping cache")
+            self.logger.info("Cache path is empty, skipping cache setup")
             return set(), None
 
         cache_path: Path = self._cache_path / file
@@ -944,7 +944,7 @@ class Bulker:
             # this will cause the cache_path to be None and skip adding to cache
             if cfg.email_cache.lower().strip() == IGNORE_CACHE_STRING:
                 email_cache = ""
-            email_cache, cache_path = self.get_cache(cfg.email_cache)
+            email_cache, cache_path = self.get_cache(email_cache)
             cache_name: str | None = None
             if cache_path is not None:
                 cache_name = cache_path.name
