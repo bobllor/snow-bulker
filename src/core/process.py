@@ -141,19 +141,7 @@ class ProcessFields:
         self.logger.debug(f"User data: {user_data}")
 
         res.content = self.get_res_content("username", fields.name)
-        searching_msg: str = "searching"
-        # loop used to ensure the UI loads to ensure the text is not searching for the user
-        for i in range(100):
-            self.utils.handle_dropdown(value=fields.name, key=user_data["email"])
-
-            if i == 0:
-                res.content = self.get_res_content("usernames list", fields.name_list)
-            users_list: list[WebElement] = self.driver.find_elements("css selector", fields.name_list)
-            if len(users_list) > 0:
-                if searching_msg not in users_list[-1].text.lower():
-                    break
-
-            time.sleep(.05)
+        users_list: list[WebElement] = self._get_user_list(user_data["email"], fields.name, fields.name_list)
 
         no_users: str = "no matches found"
 
@@ -215,6 +203,39 @@ class ProcessFields:
         e_id_element.send_keys(user_data['employee id'])
 
         return res
+    
+    def _get_user_list(self, username: str, dropdown_val: str, list_val: str) -> list[WebElement]:
+        '''Helper method used to view the users list and retrieve the list of users.
+        
+        Parameters
+        ----------
+            username: str
+                The username used for the user as its stored in the database.
+            
+            dropdown_val: str
+                The dropdown HTML value representing the HTML element of the dropdown menu.
+                This must be a **CSS selector**.
+            
+            list_val: str
+                The list HTML value representing the HTML element of the list from the dropdown menu.
+                This must be a ***CSS selector***.
+        '''
+        users_list: list[WebElement] = []
+
+        searching_msg: str = "searching"
+        # loop used to ensure the UI loads to ensure the text is not searching for the user
+        for i in range(100):
+            self.utils.handle_dropdown(value=dropdown_val, key=username)
+
+            users_list = self.driver.find_elements("css selector", list_val)
+            if len(users_list) > 0:
+                # searching message can fill the list
+                if searching_msg not in users_list[-1].text.lower():
+                    break
+
+            time.sleep(.05)
+        
+        return users_list
 
     @driver_wrapper 
     def start_desired_software_option_fields(self, desired_software: str = "", res: Result = None) -> Result:
