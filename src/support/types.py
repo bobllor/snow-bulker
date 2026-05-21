@@ -101,7 +101,7 @@ class BulkData:
     '''Class used for the data required to start the bulk process.'''
     excel_data: ExcelData | ReturnData
     email_cache: set[str]
-    cache_path: Path
+    cache_path: Path | None
     section: str
     config: Config
     profile: BulkProfile
