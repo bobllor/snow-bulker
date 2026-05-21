@@ -13,6 +13,7 @@ class ProfileUrl(BaseModel):
     dell_i5: Annotated[str, BeforeValidator(lambda v: utils.return_string(v, ""))] = ""
     dell_i7: Annotated[str, BeforeValidator(lambda v: utils.return_string(v, ""))] = ""
     dell_i7_big: Annotated[str, BeforeValidator(lambda v: utils.return_string(v, ""))] = ""
+    exchange: Annotated[str, BeforeValidator(lambda v: utils.return_string(v, ""))] = ""
 
 class LoginElements(BaseModel):
     user_element: Annotated[str, BeforeValidator(lambda v: utils.return_string(v, ""))] = ""

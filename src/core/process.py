@@ -12,6 +12,7 @@ from typing import Callable, Any
 from logger import Log
 from datetime import datetime
 from pathlib import Path
+import time
 import src.support.utils as u
 
 class ProcessFields:
@@ -140,11 +141,9 @@ class ProcessFields:
         self.logger.debug(f"User data: {user_data}")
 
         res.content = self.get_res_content("username", fields.name)
-        self.utils.handle_dropdown(value=fields.name, key=user_data["email"])
+        users_list: list[WebElement] = self._get_user_list(user_data["email"], fields.name, fields.name_list)
 
-        no_users: str = "No matches found"
-        res.content = self.get_res_content("usernames list", fields.name_list)
-        users_list: list[WebElement] = self.driver.find_elements("css selector", fields.name_list)
+        no_users: str = "no matches found"
 
         # by default if no users are found, the string "no matches found" is seen.
         # if this doesn't exist, either the wrong attribute is used or it got changed.
@@ -154,9 +153,15 @@ class ProcessFields:
 
             return res
 
+        dropdown_text: str = users_list[-1].text.lower()
+        if dropdown_text == "":
+            self.logger.warning(
+                f"Dropdown text is empty, this indicates that the HTML field {fields.namelist} is incorrect on the page",
+            )
+        self.logger.debug(f"User dropdown list text: {dropdown_text}")
         # checks if the user exists before filling the information
-        user_exist: bool = users_list[-1].text.lower() != no_users.lower()
-        if not user_exist:
+        # if "no matches found" or if it is empty
+        if dropdown_text == no_users or dropdown_text == "":
             self.driver.send_keys(Keys.ESCAPE, pause=.3)
 
             res.content = self.get_res_content("user not found button", fields.not_found_button)
@@ -198,6 +203,39 @@ class ProcessFields:
         e_id_element.send_keys(user_data['employee id'])
 
         return res
+    
+    def _get_user_list(self, username: str, dropdown_val: str, list_val: str) -> list[WebElement]:
+        '''Helper method used to view the users list and retrieve the list of users.
+        
+        Parameters
+        ----------
+            username: str
+                The username used for the user as its stored in the database.
+            
+            dropdown_val: str
+                The dropdown HTML value representing the HTML element of the dropdown menu.
+                This must be a **CSS selector**.
+            
+            list_val: str
+                The list HTML value representing the HTML element of the list from the dropdown menu.
+                This must be a ***CSS selector***.
+        '''
+        users_list: list[WebElement] = []
+
+        searching_msg: str = "searching"
+        # loop used to ensure the UI loads to ensure the text is not searching for the user
+        for i in range(100):
+            self.utils.handle_dropdown(value=dropdown_val, key=username)
+
+            users_list = self.driver.find_elements("css selector", list_val)
+            if len(users_list) > 0:
+                # searching message can fill the list
+                if searching_msg not in users_list[-1].text.lower():
+                    break
+
+            time.sleep(.05)
+        
+        return users_list
 
     @driver_wrapper 
     def start_desired_software_option_fields(self, desired_software: str = "", res: Result = None) -> Result:
@@ -339,6 +377,7 @@ class ProcessFields:
         project_account_type: AccountType = "regional",
         require_region: bool = False,
         waiver_file: str = "",
+        has_usb: bool = True,
         res: Result = None) -> Result:
         '''Starts the company field operations.
 
@@ -436,15 +475,39 @@ class ProcessFields:
         self.utils.handle_dropdown(value=fields.request_type, key="New device", send_tab=True, wait_time=1)
         # NOTE: not used. they have to manually add these themselves as this requires special permissions
         # from higher up management.
-        res.content = self.get_res_content("admin", fields.admin)
-        self.utils.handle_dropdown(value=fields.admin, key="No", send_enter=True, send_down=True, wait_time=.8)
-        res.content = self.get_res_content("universal serial bus storage", fields.usb)
-        self.utils.handle_dropdown(value=fields.usb, key="No", send_enter=True, send_down=True, wait_time=.8)
+        security_res: Result = self.start_security_fields(has_usb)
+        if security_res.err:
+            return security_res
 
         if waiver_file != "":
             waiver_res: Result = self.upload_waiver(waiver_file)
             if waiver_res.err:
                 return waiver_res
+
+        return res
+    
+    @driver_wrapper
+    def start_security_fields(self, has_usb: bool = True, res: Result = None) -> Result:
+        '''Starts the security fields of the form. This is used for USB or admin access.
+        
+        Parameters
+        ----------
+            has_usb: bool
+                Used to indicate to the program that the page has a USB field option.
+                If false, then the program will not attempt to the USB field. This is required to be
+                False if the page does not have the field, for example software only requests.
+                By default it is True.
+        '''
+        if res is None:
+            res = Result()
+        fields: CompanyFields = self.html_fields.company_fields
+
+        res.content = self.get_res_content("admin", fields.admin)
+        self.utils.handle_dropdown(value=fields.admin, key="No", send_enter=True, send_down=True, wait_time=.8)
+
+        if has_usb:
+            res.content = self.get_res_content("universal serial bus storage", fields.usb)
+            self.utils.handle_dropdown(value=fields.usb, key="No", send_enter=True, send_down=True, wait_time=.8)
 
         return res
 
@@ -507,6 +570,9 @@ class ProcessFields:
         '''Starts the return fields. This is only used if the `profile` field is
         `return`. It is going to be assumed that all items assigned to the user is returned.
 
+        It is expected the user to exist due to this being a return request, meaning the user already
+        has assets assigned in the system.
+
         The address fields are handled within the method.
 
         Parameters
@@ -527,9 +593,10 @@ class ProcessFields:
 
         fields: ReturnFields = self.html_fields.return_fields
         self.logger.debug(f"Return data: {return_data}")
+        return_value: str = "return"
 
         res.content = self.get_res_content("request type", fields.request_type)
-        self.utils.handle_dropdown(fields.request_type, key="return", send_enter=True)
+        self.utils.handle_dropdown(fields.request_type, key=return_value, send_enter=True)
 
         res.content = self.get_res_content("account manager", fields.account_manager)
         self.utils.handle_dropdown(fields.account_manager, key=account_manager_email, send_enter=True)
@@ -633,7 +700,7 @@ class ProcessFields:
         return res
 
     @driver_wrapper 
-    def start_operating_system_fields(self, os_type: OperatingSystems, res: Result = None) -> None:
+    def start_operating_system_fields(self, os_type: OperatingSystems, res: Result = None) -> Result:
         '''Handles the operation system drop down menu.
         
         This is the 4th section of the normal ordering page.
@@ -656,6 +723,26 @@ class ProcessFields:
 
         res.content = self.get_res_content("operating system fields", fields.operating_system)
         self.utils.handle_dropdown(value=fields.operating_system, key=os_type, send_tab=True, wait_time=.8)
+
+        return res
+    
+    @driver_wrapper
+    def start_software_only_order(self, 
+            user_data: UserData, 
+            company_data: CompanyData, 
+            account_manager: str,
+            res: Result = None) -> Result:
+        '''Handles ordering software only, not including the hardware.'''
+        if res is None:
+            res = Result()
+
+        user_res: Result = self.start_user_fields(user_data)
+        if user_res.err:
+            return user_res
+
+        company_res: Result = self.start_company_fields(company_data, account_manager, "regional", False, "", False)
+        if company_res.err:
+            return company_res
 
         return res
 

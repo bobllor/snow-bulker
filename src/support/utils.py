@@ -203,6 +203,7 @@ def get_profile_url(profile: Profile, profile_urls: ProfileUrl) -> str:
         "dell i7 big": profile_urls.dell_i7_big,
         "custom": profile_urls.custom,
         "return": profile_urls.returns,
+        "exchange": profile_urls.exchange,
     }
     profile = profile.lower()
 
@@ -304,7 +305,8 @@ def format_validate_postal(postal: str) -> str:
     '''
     is_canada: bool = is_canada_postal(postal)
     if is_canada:
-        return postal
+        # no spaces on canada zip
+        return postal.replace(" ", "")
 
     if len(postal) > 5:
         raise ValueError(f"Invalid postal {postal} given")

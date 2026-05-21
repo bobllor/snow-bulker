@@ -113,7 +113,7 @@ def test_start(m1: MagicMock, m2: MagicMock, data_yaml: DataYamlLoader, html_yam
 
     bulker.start(bulk_data.content, html_fields, mock_profile_urls, driver=mock_driver, refresh=False)
     
-    _, cache_path = bulker.get_cache("default_cache.txt")
+    _, cache_path = bulker.get_cache()
 
     assert cache_path.exists() and len(bulker.failed_users) == 0
 
@@ -389,6 +389,42 @@ def test_fail_users_start(_, data_yaml: DataYamlLoader, bulker: Bulker):
     mock_driver.find_elements.return_value = [mock_element]
 
     bulker.start(bulk_res.content, mock_html, mock_profile_urls, driver=mock_driver)
+
+def test_ignore_cache(data_yaml: DataYamlLoader, bulker: Bulker):
+    d: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG, lower=True)
+    for v in d.values():
+        v["email_cache"] = ""
+
+    res: Result[RootData] = data_yaml.validate(d)
+
+    assert not res.err
+
+    lbdr: Result[list[BulkData]] = bulker.get_bulk_data(res.content)
+    lbd: list[BulkData] = lbdr.content
+
+    ex_cache: set[str] = ["1"]
+    for bd in lbd:
+        assert bd.cache_path is None
+
+        c = bulker.add_to_cache("email", ex_cache, bd.cache_path)
+        assert c == ex_cache
+
+def test_default_cache(data_yaml: DataYamlLoader, bulker: Bulker):
+    raw: dict[str, Any] = data_yaml.read(vars.DATA_CONFIG, lower=True)
+    for k in raw.keys():
+        if "email_cache" in raw[k]:
+            del raw[k]["email_cache"]
+    
+    res: Result[RootData] = data_yaml.validate(raw)
+
+    for k in res.content.root.keys():
+        assert res.content.root[k].email_cache == "default_cache.txt"
+    
+    lbd: list[BulkData] = bulker.get_bulk_data(res.content).content
+
+    for bd in lbd:
+        _, path = bulker.get_cache(bd.cache_path)
+        assert path.name == "default_cache.txt"
 
 def test_default_data_path(tmp_path: Path):
     bulker: Bulker = Bulker(tmp_path)

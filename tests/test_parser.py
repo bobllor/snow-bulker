@@ -83,7 +83,7 @@ def test_address_data_postal_correction(parser: Parser):
         if "0" in parsed_postal:
             assert len(parsed_postal) == 5
         
-        assert base_postal in parsed_postal
+        assert base_postal.replace(" ", "") in parsed_postal
 
 def test_get_company_data(parser: Parser):
     df: pd.DataFrame = parser.read(vars.EXCEL, date_columns=DATE_COLUMNS, date_col_add_year="End_Date", add_years=1)

@@ -1,4 +1,4 @@
-from typing import TypedDict, TypeVar, Generic
+from typing import TypedDict, TypeVar, Generic, Literal
 from dataclasses import dataclass
 from pathlib import Path
 from src.core.yaml.config_yaml.types import Config
@@ -94,12 +94,14 @@ class ExcelData(TypedDict):
     address: list[AddressData]
     company: list[CompanyData]
 
+type BulkProfile = Literal["return", "normal", "software"]
+
 @dataclass
 class BulkData:
     '''Class used for the data required to start the bulk process.'''
     excel_data: ExcelData | ReturnData
     email_cache: set[str]
-    cache_path: Path
+    cache_path: Path | None
     section: str
     config: Config
-    is_return_profile: bool
+    profile: BulkProfile
