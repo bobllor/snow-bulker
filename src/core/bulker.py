@@ -17,6 +17,7 @@ import tempfile as tf
 import os
 
 IGNORE_CACHE_STRING: str = "ignore"
+DEFAULT_CACHE_FILE: str = "default_cache.txt"
 
 class ProcessObject(TypedDict):
     '''Object for the processor data for automation.'''
@@ -78,7 +79,7 @@ class Bulker:
         # email cache folder
         self._cache_path: Path = self.project_path / "output" / "cache"
 
-        self._default_cache_file: str = "default_cache.txt"
+        self._default_cache_file: str = DEFAULT_CACHE_FILE
 
         # file children list, these are set in method calls
         self._cache_children_paths: list[Path] = []
@@ -802,7 +803,7 @@ class Bulker:
 
         return data
 
-    def get_cache(self, file: str = "default") -> tuple[set[str], Path | None]:
+    def get_cache(self, file: str = DEFAULT_CACHE_FILE) -> tuple[set[str], Path | None]:
         '''Retrieves the email cache from the cache folder as a set. If the file does not exist,
         then it will create the file. 
         
@@ -814,8 +815,7 @@ class Bulker:
         Parameter
         ---------
             file: str
-                The file name of the cache file. By default it is set as `default` which
-                will default the file name to `default_cache.txt`.
+                The file name of the cache file. By default it is set as `default_cache.txt`.
         '''
         if file == "":
             self.logger.info("Given cache path is empty, skipping cache")
@@ -832,7 +832,7 @@ class Bulker:
             self._cache_children_paths = cache_children
             self.logger.debug(f"Cache children paths size: {len(self._cache_children_paths)}")
 
-        if file == "default": 
+        if file == DEFAULT_CACHE_FILE: 
             self.logger.info(f"No email cache found, defaulting to '{self._default_cache_file}'")
             cache_path = self._cache_path / self._default_cache_file
         elif not cache_path.exists():
