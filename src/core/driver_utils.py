@@ -97,12 +97,14 @@ def driver_wrapper(func: Callable[P, R]) -> Callable[P, R]:
         res: Result = Result()
         try:
             res = func(*args, res)
-        except (NoSuchElementException, TimeoutException):
+        except (NoSuchElementException, TimeoutException) as e:
             res.msg = EXC_FAIL_FIND_ELE_MSG
             res.err = True
-        except ElementClickInterceptedException:
+            res.exception = e
+        except ElementClickInterceptedException as e:
             res.msg = EXC_INTERCEPT_MSG
             res.err = True
+            res.exception = e
 
         return res
 
