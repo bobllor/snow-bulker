@@ -389,7 +389,7 @@ class Bulker:
                 res: Result = self.run_wrapper(process["func"], args=process["args"])
 
                 if res.err:
-                    self.logger.error(f"{res.msg} occurred during {process['process_type']}: {res.content}")
+                    self.logger.error(f"Error occurred during {process['process_type']}: {res}")
                     has_error = True
                     break
 
@@ -519,7 +519,7 @@ class Bulker:
                 res: Result = self.run_wrapper(process["func"], args=process["args"])
 
                 if res.err:
-                    self.logger.error(f"{res.msg} occurred during {process['process_type']}: {res.content}")
+                    self.logger.error(f"Error occurred during {process['process_type']}: {res}")
                     has_error = True
                     break
 
