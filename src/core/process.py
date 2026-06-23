@@ -592,7 +592,6 @@ class ProcessFields:
         res.msg = self.get_res_msg("Return Fields")
 
         fields: ReturnFields = self.html_fields.return_fields
-        self.logger.debug(f"Return data: {return_data}")
         return_value: str = "return"
 
         res.content = self.get_res_content("request type", fields.request_type)
@@ -668,6 +667,11 @@ class ProcessFields:
             send_down: bool = True if need_packaging == "no" else False
             res.content = self.get_res_content("packaging required", fields.packaging_required)
             self.utils.handle_dropdown(fields.packaging_required, key=need_packaging, send_enter=True, send_down=send_down)
+
+            res.content = self.get_res_content("hold at location", fields.hold_at_location)
+            if return_data["hold at location"].strip().lower() == "yes":
+                hold_ele: WebElement = self.driver.find_element("css selector", fields.hold_at_location)
+                self.driver.click(hold_ele)
 
             # NOTE: the address field starts here, however the fields are the same here as with other forms.
             add_res: Result = self.start_address_fields({
