@@ -96,6 +96,7 @@ return_fields:
   packaging_required: "#sample-attribute-here"
   ship_date: "#sample-attribute-here"
   additional_details: "#sample-attribute-here"
+  hold_at_location: "#sample-attribute-here"
 checkout_fields:
   cart_dropdown: "#sample-attribute-here"
   notification: "#sample-attribute-here"

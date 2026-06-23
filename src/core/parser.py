@@ -21,6 +21,7 @@ DF_RETURN_COLUMNS: ReturnColumns = {
     "country": "country",
     "packaging required": "packaging required",
     "additional notes": "additional notes",
+    "hold at location": "hold at location",
 }
 
 class Parser:
@@ -357,19 +358,22 @@ class Parser:
             DF_RETURN_COLUMNS["email"], 
             DF_RETURN_COLUMNS["packaging required"],
             DF_RETURN_COLUMNS["additional notes"],
+            DF_RETURN_COLUMNS["hold at location"],
         )
+        rows_len: int = len(df)
 
-        for i in range(len(df)):
+        for i in range(rows_len):
             row: pd.Series[str] = df.iloc[i]
 
             temp_return: ReturnColumns = {}
             for key in keys:
-                temp_return[key] = row[key]
+                temp_return[key] = row[key].strip()
         
             data.append(temp_return.copy())
 
         address_data: list[AddressData] = self.get_address_data(df)
 
+        # adds the address data keys to the rows
         for i, add in enumerate(address_data):
             data[i].update(add)
         

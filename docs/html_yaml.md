@@ -120,6 +120,7 @@ return_fields:
   packaging_required: "#field_g7"
   ship_date: "#field_g8"
   additional_details: "#field_g9"
+  hold_at_location: "#field_g10"
 checkout_fields:
   cart_dropdown: "#field_h1"
   add_to_cart_button: action_h1

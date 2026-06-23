@@ -178,6 +178,8 @@ class ReturnFields(BaseModel):
     packaging_required: str
     ship_date: str 
     additional_details: str
+    # holds at the nearest shipping drop off location
+    hold_at_location: str
 
 class CheckoutFields(BaseModel):
     '''Fields handling the HTML elements related to checking out orders.'''
