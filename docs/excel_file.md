@@ -228,3 +228,12 @@ then it will default to `Yes`.
 Additional notes for the order. 
 
 This is *not required* to have a value.
+
+#### Hold At Location
+
+Only takes one value: `yes`.
+
+If true, then it will trigger the checkbox for the order to hold the shipment at the
+facility closest to the dropoff address.
+
+This is *not required* to have a value. It will default to false, it will always attempt to ship to the address.
