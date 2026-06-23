@@ -11,6 +11,7 @@ class Result(Generic[T]):
     msg: str = ""
     err: bool = False
     content: T = None
+    exception: Exception = None
 
 UserInfo = TypedDict(
     "UserInfo",
@@ -81,6 +82,11 @@ ReturnColumns = TypedDict(
         "postal": str,
         "phone": str,
         "country": str,
+        # If "yes" the program will click on the button to hold the
+        # package at the nearest shipping location.
+        # Any value other than "yes" will be considered
+        # false. It will always default to "no".
+        "hold at location": str,
         "packaging required": str,
         "additional notes": str,
     }
