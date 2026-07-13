@@ -275,6 +275,7 @@ class Bulker:
             else:
                 self.logger.info(f"{index}: Failed to add {user_name} to cart")
                 self.logger.error(f"{add_res.msg}, {add_res.content}")
+                self._failed_users.append(user_name)
 
             if refresh:
                 driver.driver.refresh()
@@ -408,6 +409,7 @@ class Bulker:
             else:
                 self.logger.info(f"{index}: Failed to add {user_name} to cart")
                 self.logger.error(f"{add_res.msg}, {add_res.content}")
+                self._failed_users.append(user_name)
 
             if refresh:
                 driver.driver.refresh()
@@ -538,6 +540,7 @@ class Bulker:
             else:
                 self.logger.info(f"{index}: Failed to add {user_name} to cart")
                 self.logger.error(add_res.msg, add_res.content)
+                self._failed_users.append(user_name)
 
             if refresh:
                 driver.driver.refresh()
