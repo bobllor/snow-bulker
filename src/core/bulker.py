@@ -275,6 +275,7 @@ class Bulker:
             else:
                 self.logger.info(f"{index}: Failed to add {user_name} to cart")
                 self.logger.error(f"{add_res.msg}, {add_res.content}")
+                self._failed_users.append(user_name)
 
             if refresh:
                 driver.driver.refresh()
@@ -408,6 +409,7 @@ class Bulker:
             else:
                 self.logger.info(f"{index}: Failed to add {user_name} to cart")
                 self.logger.error(f"{add_res.msg}, {add_res.content}")
+                self._failed_users.append(user_name)
 
             if refresh:
                 driver.driver.refresh()
@@ -538,6 +540,7 @@ class Bulker:
             else:
                 self.logger.info(f"{index}: Failed to add {user_name} to cart")
                 self.logger.error(add_res.msg, add_res.content)
+                self._failed_users.append(user_name)
 
             if refresh:
                 driver.driver.refresh()
@@ -759,7 +762,7 @@ class Bulker:
         
         if len(self._data_children_paths) == 0:
             self.logger.info("No data paths found, setting data paths")
-            data_children: list[Path] = utils.get_path_files(self._data_path)
+            data_children: list[Path] = utils.get_path_files(self._data_path, self.logger)
 
             self._data_children_paths = data_children
             self.logger.debug(f"Data children paths size: {len(data_children)}")
@@ -827,7 +830,7 @@ class Bulker:
 
         if len(self._cache_children_paths) == 0:
             self.logger.info("No cache paths found, setting cache paths")
-            cache_children: list[Path] = utils.get_path_files(self._cache_path)
+            cache_children: list[Path] = utils.get_path_files(self._cache_path, self.logger)
 
             self._cache_children_paths = cache_children
             self.logger.debug(f"Cache children paths size: {len(self._cache_children_paths)}")

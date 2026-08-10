@@ -4,6 +4,7 @@ from src.core.yaml.config_yaml.config_yaml_loader import ConfigYamlLoader
 from src.core.yaml.config_yaml.types import ProfileUrl, Config
 from src.support.types import Result
 from typing import Iterable, Any
+from logger import Log
 import re
 
 def get_config(root: Path, file: Path | str, yaml_extensions: list[str], config_loader: ConfigYamlLoader) -> Config:
@@ -273,7 +274,7 @@ def get_file(root: Path, file: Path | str, *, exts: Iterable[str] = [], skip_dir
 
     return None
 
-def get_path_files(root: Path) -> list[Path]:
+def get_path_files(root: Path, logger: Log = None) -> list[Path]:
     '''Recursively traverses a given root path and return a list consisting of the
     full path of all files found. Any directories are not included in the list.
     
@@ -281,12 +282,21 @@ def get_path_files(root: Path) -> list[Path]:
     ----------
         root: Path
             The path that is being searched in. This must be a directory.
+        
+        logger: Log
+            The Log object for logging. This is optional and defaults to None.
     '''
     data: list[Path] = []
 
     for file in root.iterdir():
         if file.is_dir():
-            child_data: list[Path] = get_path_files(file)
+            try: 
+                child_data: list[Path] = get_path_files(file, logger)
+            except PermissionError as e:
+                if logger:
+                    logger.warning(f"Failed to open file: {e}")
+
+                continue
 
             data.extend(child_data)
         else:
